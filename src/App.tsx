@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, Info, Loader2, AlertCircle, Menu } from 'lucide-react';
+import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check } from 'lucide-react';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
 import { deriveCTData, getStructuredMotifs } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
@@ -66,9 +66,21 @@ export default function App() {
 
   const types = useMemo(() => Array.from(new Set(characters.map(c => c.type))).sort(), [characters]);
   const subtypes = useMemo(() => Array.from(new Set(characters.map(c => c.subtype))).sort(), [characters]);
-  const quadras = ['Alpha', 'Beta', 'Gamma', 'Delta'];
-  const energetics = ['Ji', 'Je', 'Pe', 'Pi'];
-  const functions = ['Fi', 'Te', 'Ti', 'Fe', 'Ne', 'Si', 'Se', 'Ni'];
+  
+  const quadras = useMemo(() => {
+    const items = characters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [characters]);
+
+  const energetics = useMemo(() => {
+    const items = characters.map(c => c.type ? deriveCTData(c.type).energetics.lead : null).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [characters]);
+
+  const functions = useMemo(() => {
+    const items = characters.map(c => c.type ? deriveCTData(c.type).functions.lead : null).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [characters]);
   
   const media = useMemo(() => Array.from(new Set(characters.map(c => c.medium))).sort(), [characters]);
 
@@ -87,20 +99,23 @@ export default function App() {
   }, [characters]);
 
   const filteredCharacters = characters.filter(char => {
-    if (currentView === 'work' && activeWork) {
-      return char.source === activeWork;
-    }
-    if (currentView === 'medium' && activeMedium) {
-      return char.medium === activeMedium;
-    }
+    // View filtering
+    if (currentView === 'work' && activeWork && char.source !== activeWork) return false;
+    if (currentView === 'medium' && activeMedium && char.medium !== activeMedium) return false;
+
     const matchesSearch = char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          char.source.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !selectedType || char.type === selectedType;
-    const ct = deriveCTData(char.type);
-    const matchesQuadra = !selectedQuadra || ct.quadra === selectedQuadra;
-    const matchesSubtype = !selectedSubtype || char.subtype === selectedSubtype;
-    const matchesEnergetic = !selectedLeadEnergetic || ct.energetics.lead === selectedLeadEnergetic;
-    const matchesFunction = !selectedLeadFunction || ct.functions.lead === selectedLeadFunction;
+    
+    // Derived data filtering
+    const ct = char.type ? deriveCTData(char.type) : null;
+    const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+    const matchesEnergetic = !selectedLeadEnergetic || (ct && ct.energetics.lead.toLowerCase() === selectedLeadEnergetic.toLowerCase());
+    const matchesFunction = !selectedLeadFunction || (ct && ct.functions.lead.toLowerCase() === selectedLeadFunction.toLowerCase());
+    
+    // Subtype filtering (case-insensitive for robustness)
+    const matchesSubtype = !selectedSubtype || 
+                          (char.subtype && char.subtype.toLowerCase() === selectedSubtype.toLowerCase());
 
     return matchesSearch && matchesType && matchesQuadra && matchesSubtype && matchesEnergetic && matchesFunction;
   });
@@ -140,6 +155,77 @@ export default function App() {
   };
 
   const currentWorkData = activeWork ? works.find(w => w.title === activeWork) : null;
+
+  const CustomSelect = ({ 
+    label, 
+    value, 
+    options, 
+    onChange, 
+    placeholder 
+  }: { 
+    label: string, 
+    value: string | null, 
+    options: string[], 
+    onChange: (val: string | null) => void,
+    placeholder: string
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="flex flex-col gap-1.5 group relative" ref={containerRef}>
+        <label className="font-mono text-[8px] uppercase tracking-widest opacity-70 text-[#1a1a1a]">{label}</label>
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between bg-transparent border-b border-[#1a1a1a]/30 py-1.5 text-[10px] font-mono tracking-wider text-left transition-colors hover:border-[#1a1a1a]"
+        >
+          <span className={`transition-opacity ${value ? 'opacity-100 font-bold' : 'opacity-50 uppercase'}`}>
+            {value || placeholder}
+          </span>
+          <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'opacity-50 group-hover:opacity-100'}`} />
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#1a1a1a]/20 shadow-2xl z-[100] max-h-60 overflow-y-auto no-scrollbar"
+            >
+              <button 
+                onClick={() => { onChange(null); setIsOpen(false); }}
+                className="w-full px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5"
+              >
+                {placeholder}
+                {!value && <Check className="w-3 h-3" />}
+              </button>
+              {options.map(opt => (
+                <button 
+                  key={opt}
+                  onClick={() => { onChange(opt); setIsOpen(false); }}
+                  className="w-full px-4 py-2 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between"
+                >
+                  {opt}
+                  {value === opt && <Check className="w-3 h-3" />}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   const worksInMedium = useMemo(() => {
     if (!activeMedium) return [];
@@ -365,73 +451,44 @@ export default function App() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
+                    className="z-50"
                   >
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-2">
-                      {/* Quadra Filter */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[8px] uppercase tracking-widest opacity-40">Quadra</label>
-                        <select 
-                          value={selectedQuadra || ''} 
-                          onChange={(e) => setSelectedQuadra(e.target.value || null)}
-                          className="bg-transparent border-b border-[#1a1a1a]/10 py-1 text-xs focus:outline-none focus:border-[#1a1a1a] cursor-pointer"
-                        >
-                          <option value="">All Quadras</option>
-                          {quadras.map(q => <option key={q} value={q}>{q}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Type Filter */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[8px] uppercase tracking-widest opacity-40">Type</label>
-                        <select 
-                          value={selectedType || ''} 
-                          onChange={(e) => setSelectedType(e.target.value || null)}
-                          className="bg-transparent border-b border-[#1a1a1a]/10 py-1 text-xs focus:outline-none focus:border-[#1a1a1a] cursor-pointer"
-                        >
-                          <option value="">All Types</option>
-                          {types.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Subtype Filter */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[8px] uppercase tracking-widest opacity-40">Subtype</label>
-                        <select 
-                          value={selectedSubtype || ''} 
-                          onChange={(e) => setSelectedSubtype(e.target.value || null)}
-                          className="bg-transparent border-b border-[#1a1a1a]/10 py-1 text-xs focus:outline-none focus:border-[#1a1a1a] cursor-pointer"
-                        >
-                          <option value="">All Subtypes</option>
-                          {subtypes.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Lead Energetic Filter */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[8px] uppercase tracking-widest opacity-40">Lead Energetic</label>
-                        <select 
-                          value={selectedLeadEnergetic || ''} 
-                          onChange={(e) => setSelectedLeadEnergetic(e.target.value || null)}
-                          className="bg-transparent border-b border-[#1a1a1a]/10 py-1 text-xs focus:outline-none focus:border-[#1a1a1a] cursor-pointer"
-                        >
-                          <option value="">All Energetics</option>
-                          {energetics.map(e => <option key={e} value={e}>{e}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Lead Function Filter */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[8px] uppercase tracking-widest opacity-40">Lead Function</label>
-                        <select 
-                          value={selectedLeadFunction || ''} 
-                          onChange={(e) => setSelectedLeadFunction(e.target.value || null)}
-                          className="bg-transparent border-b border-[#1a1a1a]/10 py-1 text-xs focus:outline-none focus:border-[#1a1a1a] cursor-pointer"
-                        >
-                          <option value="">All Functions</option>
-                          {functions.map(f => <option key={f} value={f}>{f}</option>)}
-                        </select>
-                      </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 pt-4">
+                      <CustomSelect 
+                        label="Quadra"
+                        value={selectedQuadra}
+                        options={quadras}
+                        onChange={setSelectedQuadra}
+                        placeholder="All Quadras"
+                      />
+                      <CustomSelect 
+                        label="Type"
+                        value={selectedType}
+                        options={types}
+                        onChange={setSelectedType}
+                        placeholder="All Types"
+                      />
+                      <CustomSelect 
+                        label="Subtype"
+                        value={selectedSubtype}
+                        options={subtypes}
+                        onChange={setSelectedSubtype}
+                        placeholder="All Subtypes"
+                      />
+                      <CustomSelect 
+                        label="Lead Energetic"
+                        value={selectedLeadEnergetic}
+                        options={energetics}
+                        onChange={setSelectedLeadEnergetic}
+                        placeholder="All Energetics"
+                      />
+                      <CustomSelect 
+                        label="Lead Function"
+                        value={selectedLeadFunction}
+                        options={functions}
+                        onChange={setSelectedLeadFunction}
+                        placeholder="All Functions"
+                      />
                     </div>
                   </motion.div>
                 )}
