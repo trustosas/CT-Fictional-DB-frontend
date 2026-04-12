@@ -37,16 +37,21 @@ export async function fetchCharacters(): Promise<Character[]> {
             // 23: Emotional Attitude
             // 24: Analysis
             // 25: Notes
-            // 26+: Motifs (96 values)
+            // 26: isPublished
+            // 27: publishedDate
+            // 28: editedDate
+            // 29+: Motifs (96 values)
 
             const name = row[4] || '';
             const type = row[6] || '';
             
-            // Extract motif values starting from index 26
-            const motifValues = row.slice(26, 26 + 96).map((val: any) => {
+            // Extract motif values starting from index 29
+            const motifValues = row.slice(29, 29 + 96).map((val: any) => {
               const sVal = String(val).trim().toUpperCase();
               return sVal === 'TRUE' || sVal === '1' || sVal === 'YES';
             });
+
+            const isPublished = String(row[26]).trim().toUpperCase() === 'TRUE';
 
             return {
               id: `char-${index}`,
@@ -65,6 +70,9 @@ export async function fetchCharacters(): Promise<Character[]> {
               emotionalAttitude: row[23] || '',
               analysis: row[24] || '',
               notes: row[25] || '',
+              isPublished,
+              publishedDate: row[27] || '',
+              editedDate: row[28] || '',
               motifValues: motifValues.length > 0 ? motifValues : undefined
             };
           }).filter((char: any) => char.name && char.type && char.name.toLowerCase() !== 'name');

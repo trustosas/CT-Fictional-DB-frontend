@@ -7,6 +7,43 @@ import { fetchCharacters } from './services/dataService';
 
 type View = 'home' | 'medium' | 'work' | 'feed';
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  try {
+    const hasTime = dateStr.includes(' ') || dateStr.includes('T');
+    const hasTimezone = /Z|[+-]\d{2}:?\d{2}$/.test(dateStr);
+    
+    let normalizedStr = dateStr;
+    if (!hasTimezone) {
+      if (hasTime) {
+        normalizedStr = `${dateStr.replace(' ', 'T')}+01:00`;
+      } else {
+        // Just a date, assume start of day in Lagos (GMT+1)
+        normalizedStr = `${dateStr}T00:00:00+01:00`;
+      }
+    }
+    
+    const date = new Date(normalizedStr);
+    if (isNaN(date.getTime())) return dateStr;
+
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    };
+
+    if (hasTime) {
+      options.hour = '2-digit';
+      options.minute = '2-digit';
+      options.hour12 = true;
+    }
+
+    return new Intl.DateTimeFormat(undefined, options).format(date);
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 export default function App() {
   const [characters, setCharacters] = useState<Character[]>(STATIC_CHARACTERS);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,10 +97,22 @@ export default function App() {
     };
   }, [activeMotifId]);
 
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  };
+
   useEffect(() => {
     setActiveMotifDesc(null);
     setActiveMotifId(null);
     setMotifAnchor(null);
+    setExpandedSections(new Set());
   }, [selectedCharacter]);
 
   useEffect(() => {
@@ -99,31 +148,35 @@ export default function App() {
     loadData();
   }, []);
 
+  const publishedCharacters = useMemo(() => {
+    return characters.filter(c => c.isPublished);
+  }, [characters]);
+
   const types = useMemo(() => {
-    const filtered = characters.filter(c => {
+    const filtered = publishedCharacters.filter(c => {
       const ct = c.type ? deriveCTData(c.type) : null;
       return !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
     });
     return Array.from(new Set(filtered.map(c => c.type))).sort();
-  }, [characters, selectedQuadra]);
+  }, [publishedCharacters, selectedQuadra]);
 
   const developments = useMemo(() => {
-    const filtered = characters.filter(c => {
+    const filtered = publishedCharacters.filter(c => {
       const matchesType = !selectedType || c.type === selectedType;
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
       return matchesType && matchesQuadra;
     });
     return Array.from(new Set(filtered.map(c => c.finalDevelopment))).sort();
-  }, [characters, selectedType, selectedQuadra]);
+  }, [publishedCharacters, selectedType, selectedQuadra]);
   
   const quadras = useMemo(() => {
-    const items = characters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
+    const items = publishedCharacters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
-  }, [characters]);
+  }, [publishedCharacters]);
 
   const energetics = useMemo(() => {
-    const filtered = characters.filter(c => {
+    const filtered = publishedCharacters.filter(c => {
       const matchesType = !selectedType || c.type === selectedType;
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
@@ -131,10 +184,10 @@ export default function App() {
     });
     const items = filtered.map(c => c.type ? deriveCTData(c.type).energetics.lead : null).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
-  }, [characters, selectedType, selectedQuadra]);
+  }, [publishedCharacters, selectedType, selectedQuadra]);
 
   const functions = useMemo(() => {
-    const filtered = characters.filter(c => {
+    const filtered = publishedCharacters.filter(c => {
       const matchesType = !selectedType || c.type === selectedType;
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
@@ -142,7 +195,7 @@ export default function App() {
     });
     const items = filtered.map(c => c.type ? deriveCTData(c.type).functions.lead : null).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
-  }, [characters, selectedType, selectedQuadra]);
+  }, [publishedCharacters, selectedType, selectedQuadra]);
 
   // Reset dependent filters if they become invalid
   useEffect(() => {
@@ -161,11 +214,11 @@ export default function App() {
     if (selectedLeadFunction && !functions.includes(selectedLeadFunction)) setSelectedLeadFunction(null);
   }, [selectedType, selectedQuadra, functions]);
   
-  const media = useMemo(() => Array.from(new Set(characters.map(c => c.medium))).sort(), [characters]);
+  const media = useMemo(() => Array.from(new Set(publishedCharacters.map(c => c.medium))).sort(), [publishedCharacters]);
 
   const works = useMemo(() => {
     const workMap = new Map<string, { title: string; imageUrl: string; year: string }>();
-    characters.forEach(char => {
+    publishedCharacters.forEach(char => {
       if (!workMap.has(char.source)) {
         workMap.set(char.source, { 
           title: char.source, 
@@ -175,29 +228,38 @@ export default function App() {
       }
     });
     return Array.from(workMap.values());
-  }, [characters]);
+  }, [publishedCharacters]);
 
-  const filteredCharacters = characters.filter(char => {
-    // View filtering
-    if (currentView === 'work' && activeWork && char.source !== activeWork) return false;
-    if (currentView === 'medium' && activeMedium && char.medium !== activeMedium) return false;
+  const filteredCharacters = useMemo(() => {
+    return publishedCharacters
+      .filter(char => {
+        // View filtering
+        if (currentView === 'work' && activeWork && char.source !== activeWork) return false;
+        if (currentView === 'medium' && activeMedium && char.medium !== activeMedium) return false;
 
-    const matchesSearch = char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         char.source.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = !selectedType || char.type === selectedType;
-    
-    // Derived data filtering
-    const ct = char.type ? deriveCTData(char.type) : null;
-    const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-    const matchesEnergetic = !selectedLeadEnergetic || (ct && ct.energetics.lead.toLowerCase() === selectedLeadEnergetic.toLowerCase());
-    const matchesFunction = !selectedLeadFunction || (ct && ct.functions.lead.toLowerCase() === selectedLeadFunction.toLowerCase());
-    
-    // Development filtering (case-insensitive for robustness)
-    const matchesDevelopment = !selectedDevelopment || 
-                          (char.finalDevelopment && char.finalDevelopment.toLowerCase() === selectedDevelopment.toLowerCase());
+        const matchesSearch = char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             char.source.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesType = !selectedType || char.type === selectedType;
+        
+        // Derived data filtering
+        const ct = char.type ? deriveCTData(char.type) : null;
+        const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+        const matchesEnergetic = !selectedLeadEnergetic || (ct && ct.energetics.lead.toLowerCase() === selectedLeadEnergetic.toLowerCase());
+        const matchesFunction = !selectedLeadFunction || (ct && ct.functions.lead.toLowerCase() === selectedLeadFunction.toLowerCase());
+        
+        // Development filtering (case-insensitive for robustness)
+        const matchesDevelopment = !selectedDevelopment || 
+                              (char.finalDevelopment && char.finalDevelopment.toLowerCase() === selectedDevelopment.toLowerCase());
 
-    return matchesSearch && matchesType && matchesQuadra && matchesDevelopment && matchesEnergetic && matchesFunction;
-  });
+        return matchesSearch && matchesType && matchesQuadra && matchesDevelopment && matchesEnergetic && matchesFunction;
+      })
+      .sort((a, b) => {
+        // Sort by publishedDate descending (newest first)
+        const dateA = a.publishedDate || '';
+        const dateB = b.publishedDate || '';
+        return dateB.localeCompare(dateA);
+      });
+  }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, selectedType, selectedQuadra, selectedLeadEnergetic, selectedLeadFunction, selectedDevelopment]);
 
   const navigateToWork = (workTitle: string) => {
     setActiveWork(workTitle);
@@ -746,6 +808,9 @@ export default function App() {
                       <span className="font-mono text-sm font-bold mb-1">{selectedCharacter.type}</span>
                       <span className="font-sans text-lg font-bold tracking-[0.2em] leading-none">{selectedCharacter.finalDevelopment}</span>
                       <span className="font-mono text-[9px] opacity-40 tracking-tighter">{selectedCharacter.subtype} • {selectedCharacter.behaviourQualia}</span>
+                      {selectedCharacter.alternateType && (
+                        <span className="font-mono text-[8px] opacity-30 tracking-tighter italic mt-1">Alt: {selectedCharacter.alternateType}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -781,33 +846,67 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-                  <div className="space-y-8">
-                    <div>
-                      <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
-                        <Zap className="w-3 h-3" /> Energetics
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(ct.energetics).map(([key, val]) => (
-                          <div key={key} className="border border-[#1a1a1a]/5 p-3 rounded">
-                            <p className="font-mono text-[9px] uppercase opacity-40 mb-1">{key}</p>
-                            <p className="font-serif italic text-lg">{val}</p>
-                          </div>
-                        ))}
-                      </div>
+                  <div className="space-y-6">
+                    <div className="border-b border-[#1a1a1a]/5 pb-4">
+                      <button 
+                        onClick={() => toggleSection('energetics')}
+                        className="w-full flex items-center justify-between group"
+                      >
+                        <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 flex items-center gap-2 group-hover:opacity-100 transition-opacity">
+                          <Zap className="w-3 h-3" /> Energetics
+                        </h4>
+                        <ChevronDown className={`w-3 h-3 opacity-20 group-hover:opacity-100 transition-all ${expandedSections.has('energetics') ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {expandedSections.has('energetics') && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                              {Object.entries(ct.energetics).map(([key, val]) => (
+                                <div key={key} className="border border-[#1a1a1a]/5 p-3 rounded bg-[#f5f2ed]/20">
+                                  <p className="font-mono text-[9px] uppercase opacity-40 mb-1">{key}</p>
+                                  <p className="font-serif italic text-base">{val}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
-                    <div>
-                      <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
-                        <Layers className="w-3 h-3" /> Functions
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(ct.functions).map(([key, val]) => (
-                          <div key={key} className="border border-[#1a1a1a]/5 p-3 rounded">
-                            <p className="font-mono text-[9px] uppercase opacity-40 mb-1">{key}</p>
-                            <p className="font-serif italic text-lg">{val}</p>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="border-b border-[#1a1a1a]/5 pb-4">
+                      <button 
+                        onClick={() => toggleSection('functions')}
+                        className="w-full flex items-center justify-between group"
+                      >
+                        <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 flex items-center gap-2 group-hover:opacity-100 transition-opacity">
+                          <Layers className="w-3 h-3" /> Function Stack
+                        </h4>
+                        <ChevronDown className={`w-3 h-3 opacity-20 group-hover:opacity-100 transition-all ${expandedSections.has('functions') ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {expandedSections.has('functions') && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                              {Object.entries(ct.functions).map(([key, val]) => (
+                                <div key={key} className="border border-[#1a1a1a]/5 p-3 rounded bg-[#f5f2ed]/20">
+                                  <p className="font-mono text-[9px] uppercase opacity-40 mb-1">{key}</p>
+                                  <p className="font-serif italic text-base">{val}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
@@ -836,9 +935,24 @@ export default function App() {
                       <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
                         <Activity className="w-3 h-3" /> Analysis
                       </h4>
-                      <p className="text-sm leading-relaxed opacity-80">
+                      <p className="text-sm leading-relaxed opacity-80 mb-6">
                         {selectedCharacter.analysis}
                       </p>
+                      
+                      <div className="flex flex-wrap gap-4 pt-4 border-t border-[#1a1a1a]/5">
+                        {selectedCharacter.publishedDate && (
+                          <div>
+                            <p className="font-mono text-[8px] uppercase opacity-40 mb-0.5">Published</p>
+                            <p className="font-mono text-[9px] opacity-60">{formatDate(selectedCharacter.publishedDate)}</p>
+                          </div>
+                        )}
+                        {selectedCharacter.editedDate && selectedCharacter.editedDate !== selectedCharacter.publishedDate && (
+                          <div>
+                            <p className="font-mono text-[8px] uppercase opacity-40 mb-0.5">Last Edited</p>
+                            <p className="font-mono text-[9px] opacity-60">{formatDate(selectedCharacter.editedDate)}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

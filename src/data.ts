@@ -15,6 +15,9 @@ export interface Character {
   emotionalAttitude: string;
   analysis: string;
   notes?: string;
+  isPublished: boolean;
+  publishedDate?: string;
+  editedDate?: string;
   motifValues?: boolean[];
 }
 
