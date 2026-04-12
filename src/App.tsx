@@ -454,6 +454,38 @@ function AppContent() {
     return Array.from(workMap.values());
   }, [characters, activeMedium]);
 
+  const isNotFound = useMemo(() => {
+    if (isLoading) return false;
+    if (mediumSlug && !activeMedium) return true;
+    if (workSlug && !activeWork) return true;
+    if (subjectSlug && !selectedCharacter) return true;
+    return false;
+  }, [isLoading, mediumSlug, activeMedium, workSlug, activeWork, subjectSlug, selectedCharacter]);
+
+  if (isLoading && (mediumSlug || workSlug || subjectSlug)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f2ed]">
+        <Loader2 className="w-12 h-12 animate-spin mb-4 opacity-20" />
+        <span className="font-mono text-xs uppercase tracking-widest opacity-40">Retrieving Dossier...</span>
+      </div>
+    );
+  }
+
+  if (isNotFound) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f2ed] p-6 text-center">
+        <h1 className="font-serif text-6xl mb-4">404</h1>
+        <p className="font-mono text-xs uppercase tracking-widest opacity-50 mb-8">Subject or Source Not Found in Archives</p>
+        <button 
+          onClick={navigateToHome}
+          className="px-8 py-3 bg-[#1a1a1a] text-white font-mono text-xs uppercase tracking-widest rounded-full hover:bg-black transition-colors"
+        >
+          Return to Feed
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen px-6 py-12 md:px-12 lg:px-24">
       {/* Hamburger Menu Overlay */}
