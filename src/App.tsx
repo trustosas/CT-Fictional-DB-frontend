@@ -15,11 +15,12 @@ const formatDate = (dateStr: string) => {
   try {
     const hasTime = dateStr.includes(' ') || dateStr.includes('T');
     
-    // If no timezone info is present, assume UTC to ensure consistent conversion for all users
+    // If no timezone info is present, assume GMT+1 (Lagos/London BST) as the source timezone
+    // to ensure consistent conversion for all users based on the database's reference time.
     let normalizedStr = dateStr;
     if (!dateStr.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
-      // Append UTC to treat it as a universal timestamp
-      normalizedStr = dateStr.includes(' ') ? dateStr + ' UTC' : dateStr;
+      // Append +01:00 to treat it as a GMT+1 timestamp
+      normalizedStr = dateStr.includes(' ') ? dateStr.replace(' ', 'T') + '+01:00' : dateStr;
     }
     
     const date = new Date(normalizedStr);
@@ -33,6 +34,7 @@ const formatDate = (dateStr: string) => {
         day: 'numeric',
         hour: hasTime ? '2-digit' : undefined,
         minute: hasTime ? '2-digit' : undefined,
+        second: hasTime ? '2-digit' : undefined,
         hour12: true
       }).format(fallbackDate);
     }
@@ -46,6 +48,7 @@ const formatDate = (dateStr: string) => {
     if (hasTime) {
       options.hour = '2-digit';
       options.minute = '2-digit';
+      options.second = '2-digit';
       options.hour12 = true;
     }
 
