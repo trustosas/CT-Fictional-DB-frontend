@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
 import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
 import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
@@ -44,6 +46,56 @@ const formatDate = (dateStr: string) => {
     return dateStr;
   }
 };
+
+function MarkdownAnalysis({ content }: { content: string }) {
+  const [markdown, setMarkdown] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!content) {
+      setMarkdown('');
+      return;
+    }
+    const urlPattern = /^https?:\/\//;
+    const detectedUrl = urlPattern.test(content.trim());
+
+    if (detectedUrl) {
+      setLoading(true);
+      fetch(content.trim())
+        .then(res => res.text())
+        .then(text => {
+          setMarkdown(text);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to fetch analysis:', err);
+          setMarkdown(`Failed to load analysis from: ${content}`);
+          setLoading(false);
+        });
+    } else {
+      setMarkdown(content);
+    }
+  }, [content]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 py-8 border border-[#1a1a1a]/5 rounded bg-[#1a1a1a]/5 justify-center mb-6">
+        <Loader2 className="w-4 h-4 animate-spin opacity-40" />
+        <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">Decrypting Analysis...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="prose prose-sm max-w-none prose-neutral opacity-90 leading-relaxed font-serif text-lg">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {markdown}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -1028,9 +1080,7 @@ function AppContent() {
                       <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
                         <Activity className="w-3 h-3" /> Analysis
                       </h4>
-                      <p className="text-sm leading-relaxed opacity-80 mb-6">
-                        {selectedCharacter.analysis}
-                      </p>
+                      <MarkdownAnalysis content={selectedCharacter.analysis} />
                       
                       <div className="flex flex-wrap gap-4 pt-4 border-t border-[#1a1a1a]/5">
                         {selectedCharacter.publishedDate && (
