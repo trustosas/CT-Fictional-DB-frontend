@@ -518,7 +518,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f5f2ed]">
         <Loader2 className="w-12 h-12 animate-spin mb-4 opacity-20" />
-        <span className="font-mono text-xs uppercase tracking-widest opacity-40">Retrieving Dossier...</span>
+        <span className="font-mono text-xs uppercase tracking-widest opacity-40">Retrieving...</span>
       </div>
     );
   }
@@ -936,7 +936,7 @@ function AppContent() {
 
                 <div className="mb-12">
                   <span className="font-mono text-xs uppercase tracking-[0.2em] opacity-40 mb-4 block">
-                    Subject Dossier
+                    Subject Profile
                   </span>
                   <h2 className="font-serif text-5xl md:text-7xl leading-tight mb-4">
                     {selectedCharacter.name}
@@ -952,10 +952,6 @@ function AppContent() {
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="font-mono text-sm font-bold mb-1">{selectedCharacter.type}</span>
                       <span className="font-sans text-lg font-bold tracking-[0.2em] leading-none whitespace-nowrap">{selectedCharacter.finalDevelopment}</span>
-                      <span className="font-mono text-[9px] opacity-40 tracking-tighter">{selectedCharacter.subtype} • {selectedCharacter.behaviourQualia}</span>
-                      {selectedCharacter.alternateType && (
-                        <span className="font-mono text-[8px] opacity-30 tracking-tighter italic mt-1">Alt: {selectedCharacter.alternateType}</span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -972,8 +968,16 @@ function AppContent() {
                   </div>
                 </div>
 
-                {/* Development & Attitude */}
-                <div className="grid grid-cols-3 gap-4 mb-12">
+                {/* Core Profile Data */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
+                  <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
+                    <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Subtype</p>
+                    <span className="font-serif italic text-xl block leading-none">{selectedCharacter.subtype}</span>
+                  </div>
+                  <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
+                    <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Qualia</p>
+                    <span className="font-serif italic text-xl block leading-none">{selectedCharacter.behaviourQualia}</span>
+                  </div>
                   <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                     <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Initial Dev</p>
                     <span className="font-sans text-xl font-bold tracking-[0.2em] block leading-none mb-1">{selectedCharacter.initialDevelopment}</span>
@@ -985,9 +989,15 @@ function AppContent() {
                     <p className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getDevelopmentName(selectedCharacter.finalDevelopment, selectedCharacter.type, selectedCharacter.behaviourQualia)}</p>
                   </div>
                   <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
-                    <p className="font-mono text-[9px] uppercase opacity-40 mb-1">Emotional Attitude</p>
-                    <p className="font-serif italic text-lg">{selectedCharacter.emotionalAttitude}</p>
+                    <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Emotional Attitude</p>
+                    <p className="font-serif italic text-xl leading-none">{selectedCharacter.emotionalAttitude}</p>
                   </div>
+                  {selectedCharacter.alternateType && (
+                    <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
+                      <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Alternate Type</p>
+                      <p className="font-serif italic text-xl leading-none">{selectedCharacter.alternateType}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
