@@ -890,20 +890,9 @@ function AppContent() {
               <div className="max-w-md mx-auto">
                 <AlertCircle className="w-12 h-12 mx-auto mb-6 opacity-20" />
                 <h2 className="font-serif text-3xl mb-4">No Subjects Found</h2>
-                <p className="text-sm opacity-50 leading-relaxed mb-8">
-                  The feed is currently empty or the live sync is disconnected. 
-                  If you are the administrator, ensure your Google Sheet is 
-                  <strong> Published to the Web</strong> as a <strong>CSV</strong>.
+                <p className="text-sm opacity-50 leading-relaxed">
+                  No subjects match your current search or filter criteria in the database.
                 </p>
-                <div className="p-6 bg-[#1a1a1a]/5 rounded-sm text-left">
-                  <p className="font-mono text-[10px] uppercase tracking-widest mb-4 opacity-40">Troubleshooting Steps:</p>
-                  <ol className="font-mono text-[10px] space-y-2 opacity-60">
-                    <li>1. Open your Google Sheet</li>
-                    <li>2. File &gt; Share &gt; Publish to web</li>
-                    <li>3. Select "Entire Document" and "Comma-separated values (.csv)"</li>
-                    <li>4. Click Publish and refresh this page</li>
-                  </ol>
-                </div>
               </div>
             </div>
           )}
