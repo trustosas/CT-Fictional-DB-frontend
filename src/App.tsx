@@ -4,6 +4,7 @@ import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
 import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { formatDistanceToNow } from 'date-fns';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
 import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName, getSubtypeName } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
@@ -55,6 +56,21 @@ const formatDate = (dateStr: string) => {
     return new Intl.DateTimeFormat(undefined, options).format(date);
   } catch (e) {
     return dateStr;
+  }
+};
+
+const getRelativeTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  try {
+    let normalizedStr = dateStr;
+    if (!dateStr.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+      normalizedStr = dateStr.includes(' ') ? dateStr.replace(' ', 'T') + '+01:00' : dateStr;
+    }
+    const date = new Date(normalizedStr);
+    if (isNaN(date.getTime())) return '';
+    return `(${formatDistanceToNow(date, { addSuffix: true })})`;
+  } catch (e) {
+    return '';
   }
 };
 
@@ -1135,17 +1151,21 @@ function AppContent() {
                       </h4>
                       <MarkdownAnalysis content={selectedCharacter.analysis} />
                       
-                      <div className="flex flex-wrap gap-4 pt-4 border-t border-[#1a1a1a]/5">
+                      <div className="flex flex-col gap-4 pt-4 border-t border-[#1a1a1a]/5">
                         {selectedCharacter.publishedDate && (
                           <div>
                             <p className="font-mono text-[8px] uppercase opacity-40 mb-0.5">Published</p>
-                            <p className="font-mono text-[9px] opacity-60">{formatDate(selectedCharacter.publishedDate)}</p>
+                            <p className="font-mono text-[9px] opacity-60">
+                              {formatDate(selectedCharacter.publishedDate)} <span className="opacity-60 ml-1">{getRelativeTime(selectedCharacter.publishedDate)}</span>
+                            </p>
                           </div>
                         )}
                         {selectedCharacter.editedDate && selectedCharacter.editedDate !== selectedCharacter.publishedDate && (
                           <div>
                             <p className="font-mono text-[8px] uppercase opacity-40 mb-0.5">Last Edited</p>
-                            <p className="font-mono text-[9px] opacity-60">{formatDate(selectedCharacter.editedDate)}</p>
+                            <p className="font-mono text-[9px] opacity-60">
+                              {formatDate(selectedCharacter.editedDate)} <span className="opacity-60 ml-1">{getRelativeTime(selectedCharacter.editedDate)}</span>
+                            </p>
                           </div>
                         )}
                       </div>
