@@ -5,7 +5,7 @@ import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, Che
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
-import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName } from './lib/ct-logic';
+import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName, getSubtypeName } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
 
 type View = 'medium' | 'work' | 'feed';
@@ -972,7 +972,8 @@ function AppContent() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
                   <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                     <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Subtype</p>
-                    <span className="font-serif italic text-xl block leading-none">{selectedCharacter.subtype}</span>
+                    <span className="font-serif italic text-xl block leading-none mb-1">{selectedCharacter.subtype}</span>
+                    <p className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getSubtypeName(selectedCharacter.subtype)}</p>
                   </div>
                   <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                     <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Qualia</p>
