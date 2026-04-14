@@ -1257,7 +1257,7 @@ function AppContent() {
                 {selectedCharacter.notes && (
                   <div className="mb-16 p-6 bg-[#1a1a1a]/5 rounded-sm border-l-2 border-[#1a1a1a]/20">
                     <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-2 flex items-center gap-2">
-                      <Info className="w-3 h-3" /> Researcher Notes
+                      <Info className="w-3 h-3" /> Analyst Notes
                     </h4>
                     <p className="text-xs opacity-60 italic">{selectedCharacter.notes}</p>
                   </div>
