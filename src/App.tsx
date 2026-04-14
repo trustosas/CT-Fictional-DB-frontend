@@ -934,7 +934,9 @@ function AppContent() {
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
                     <span className="font-mono text-xs bg-[#1a1a1a]/5 px-2 py-1 rounded mb-1">{char.type}</span>
-                    <span className="font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap">{char.finalDevelopment}</span>
+                    <span className={`font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap ${!char.finalDevelopment ? 'opacity-40' : ''}`}>
+                      {char.finalDevelopment || char.initialDevelopment}
+                    </span>
                     <span className="font-mono text-[9px] opacity-40 tracking-tighter">{char.subtype} • {char.behaviourQualia}</span>
                   </div>
                 </div>
@@ -989,7 +991,9 @@ function AppContent() {
                     <div className="h-px flex-1 bg-[#1a1a1a]/10" />
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="font-mono text-sm font-bold mb-1">{selectedCharacter.type}</span>
-                      <span className="font-sans text-lg font-bold tracking-[0.2em] leading-none whitespace-nowrap">{selectedCharacter.finalDevelopment}</span>
+                      <span className={`font-sans text-lg font-bold tracking-[0.2em] leading-none whitespace-nowrap ${!selectedCharacter.finalDevelopment ? 'opacity-40' : ''}`}>
+                        {selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1298,6 +1302,7 @@ function AppContent() {
         </p>
         <div className="flex gap-8 font-mono text-[10px] uppercase tracking-widest opacity-40">
           <a href="https://docs.google.com/spreadsheets/d/1IQxu5vK1Zr4twJ1rcxVgDiS-EnhoKj79K9thuOtdpic/edit?usp=drivesdk" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">Database</a>
+          <a href="https://app.trakt.tv/profile/trust02" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">Trakt</a>
           <a href="mailto:osayandeosas1000@gmail.com" className="hover:opacity-100 transition-opacity">Contact</a>
         </div>
       </footer>
