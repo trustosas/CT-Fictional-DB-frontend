@@ -7,7 +7,9 @@ export async function fetchCharacters(): Promise<Character[]> {
   try {
     // Adding a timestamp to bypass any potential browser caching
     const cacheBuster = `&t=${Date.now()}`;
-    const response = await fetch(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + cacheBuster);
+    const response = await fetch(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + cacheBuster, {
+      cache: 'no-store'
+    });
     const csvText = await response.text();
     
     // Split into lines and skip the first 6 metadata/header rows

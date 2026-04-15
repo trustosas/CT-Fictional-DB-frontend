@@ -128,7 +128,7 @@ function AppContent() {
       const cacheBuster = `v=${Date.now()}`;
       const bustedUrl = url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
       try {
-        const res = await fetch(bustedUrl);
+        const res = await fetch(bustedUrl, { cache: 'no-store' });
         return await res.text();
       } catch (err) {
         console.error('Failed to fetch analysis:', err);
@@ -958,7 +958,7 @@ function AppContent() {
                       {char.finalDevelopment || char.initialDevelopment}
                     </span>
                     <span className="font-mono text-[9px] opacity-40 tracking-tighter">
-                      {[char.subtype, char.behaviourQualia].filter(Boolean).join(' • ')}
+                      {[char.subtype?.trim(), char.behaviourQualia?.trim()].filter(s => s && s.length > 0).join(' • ')}
                     </span>
                   </div>
                 </div>
