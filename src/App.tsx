@@ -989,17 +989,19 @@ function AppContent() {
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               >
-                <button 
-                  onClick={() => handleSelectCharacter(null)}
-                  className="absolute top-8 right-8 p-2 hover:bg-black/5 rounded-full transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-
-                <div className="mb-12">
-                  <span className="font-mono text-xs uppercase tracking-[0.2em] opacity-40 mb-4 block">
+                <div className="flex justify-between items-center mb-8">
+                  <span className="font-mono text-xs uppercase tracking-[0.2em] opacity-40 block">
                     Subject Profile
                   </span>
+                  <button 
+                    onClick={() => handleSelectCharacter(null)}
+                    className="p-2 -mr-2 hover:bg-black/5 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="mb-12">
                   <h2 className="font-serif text-5xl md:text-7xl leading-tight mb-4">
                     {selectedCharacter.name}
                   </h2>
