@@ -9,8 +9,15 @@ export interface Character {
   type: string;
   leadEnergetic: string;
   auxiliaryEnergetic: string;
+  tertiaryEnergetic: string;
+  polarEnergetic: string;
   leadFunction: string;
   auxiliaryFunction: string;
+  tertiaryFunction: string;
+  polarFunction: string;
+  judgmentAxis: string;
+  perceptionAxis: string;
+  quadra: string;
   alternateType?: string;
   subtype: string;
   behaviourQualia: string;

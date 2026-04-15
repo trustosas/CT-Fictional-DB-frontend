@@ -217,46 +217,12 @@ export type FunctionCode = 'Fi' | 'Te' | 'Ti' | 'Fe' | 'Ne' | 'Si' | 'Se' | 'Ni'
 export type EnergeticCode = 'Ji' | 'Je' | 'Pe' | 'Pi';
 export type Quadra = 'Alpha' | 'Beta' | 'Gamma' | 'Delta';
 
-const OPPOSITES: Record<string, FunctionCode> = {
-  'Ne': 'Si', 'Si': 'Ne',
-  'Se': 'Ni', 'Ni': 'Se',
-  'Fe': 'Ti', 'Ti': 'Fe',
-  'Te': 'Fi', 'Fi': 'Te'
-};
-
-const ENERGETIC_CLASS: Record<string, EnergeticCode> = {
-  'Ti': 'Ji', 'Fi': 'Ji',
-  'Te': 'Je', 'Fe': 'Je',
-  'Se': 'Pe', 'Ne': 'Pe',
-  'Si': 'Pi', 'Ni': 'Pi',
-  'Ji': 'Ji', 'Je': 'Je',
-  'Pe': 'Pe', 'Pi': 'Pi'
-};
-
-const ENERGETIC_OPPOSITES: Record<EnergeticCode, EnergeticCode> = {
-  'Ji': 'Je', 'Je': 'Ji',
-  'Pi': 'Pe', 'Pe': 'Pi'
-};
-
 export function getLeadFunction(type: string): string {
   return type.substring(0, 2);
 }
 
 export function getAuxFunction(type: string): string {
   return type.substring(2, 4);
-}
-
-export function getTertiaryFunction(aux: FunctionCode): FunctionCode {
-  return OPPOSITES[aux];
-}
-
-export function getPolarFunction(lead: FunctionCode): FunctionCode {
-  return OPPOSITES[lead];
-}
-
-export function getEnergetic(func: string): EnergeticCode {
-  const code = normalizeFunctionCode(func);
-  return ENERGETIC_CLASS[code] || (code as EnergeticCode);
 }
 
 export function normalizeFunctionCode(func: string): string {
@@ -294,47 +260,6 @@ export function normalizeFunctionCode(func: string): string {
   return '';
 }
 
-export function getAuxiliaryEnergetic(aux: string): EnergeticCode {
-  return getEnergetic(aux);
-}
-
-export function getTertiaryEnergetic(auxE: EnergeticCode): EnergeticCode {
-  return ENERGETIC_OPPOSITES[auxE];
-}
-
-export function getPolarEnergetic(leadE: EnergeticCode): EnergeticCode {
-  return ENERGETIC_OPPOSITES[leadE];
-}
-
-export function getJudgmentAxis(type: string): string {
-  const lf = type.substring(0, 2);
-  const af = type.substring(2, 4);
-  if (['Fi', 'Te'].includes(lf) || ['Fi', 'Te'].includes(af)) return 'Te-Fi';
-  if (['Ti', 'Fe'].includes(lf) || ['Ti', 'Fe'].includes(af)) return 'Fe-Ti';
-  return '';
-}
-
-export function getPerceptionAxis(type: string): string {
-  const lf = type.substring(0, 2);
-  const af = type.substring(2, 4);
-  if (['Si', 'Ne'].includes(lf) || ['Si', 'Ne'].includes(af)) return 'Ne-Si';
-  if (['Se', 'Ni'].includes(lf) || ['Se', 'Ni'].includes(af)) return 'Se-Ni';
-  return '';
-}
-
-export function getQuadra(type: string): Quadra | '' {
-  const jAxis = getJudgmentAxis(type);
-  const pAxis = getPerceptionAxis(type);
-  
-  if (!jAxis || !pAxis) return '';
-
-  if (jAxis === 'Te-Fi') {
-    return pAxis === 'Ne-Si' ? 'Delta' : 'Gamma';
-  } else {
-    return pAxis === 'Se-Ni' ? 'Beta' : 'Alpha';
-  }
-}
-
 export function getStructuredMotifs(values: boolean[]): FunctionMotifs[] {
   const functions = ['Je', 'Pi', 'Pe', 'Ji', 'Fe', 'Te', 'Ni', 'Si', 'Ti', 'Fi', 'Se', 'Ne'];
   const structured: FunctionMotifs[] = [];
@@ -367,8 +292,8 @@ export function getStructuredMotifs(values: boolean[]): FunctionMotifs[] {
   return structured;
 }
 
-export function getDevelopmentName(symbol: string, type: string, behaviourQualia?: string, dbLeadE?: string, dbAuxE?: string): string {
-  if (!type) {
+export function getDevelopmentName(symbol: string, leadEnergetic: string, behaviourQualia?: string): string {
+  if (!leadEnergetic) {
     const genericMapping: Record<string, string> = {
       'I---': 'Standard',
       'II--': 'Full Reviser / Full Conductor',
@@ -382,18 +307,17 @@ export function getDevelopmentName(symbol: string, type: string, behaviourQualia
     return genericMapping[symbol] || symbol;
   }
 
-  const ct = deriveCTData(type, dbLeadE, dbAuxE);
-  const isJLead = ct.energetics.lead === 'Ji' || ct.energetics.lead === 'Je';
+  const isJLead = leadEnergetic === 'Ji' || leadEnergetic === 'Je';
   
   // Use behaviourQualia from DB if provided, otherwise fallback to derived logic
   const isConductor = behaviourQualia 
     ? behaviourQualia.toLowerCase().includes('conductor')
-    : (ct.energetics.lead === 'Je' || ct.energetics.lead === 'Pi');
+    : (leadEnergetic === 'Je' || leadEnergetic === 'Pi');
 
   const mapping: Record<string, string> = {
     'I---': 'Standard',
     'II--': isConductor ? 'Full Conductor' : 'Full Reviser',
-    'I-I-': (ct.energetics.lead === 'Je' || ct.energetics.lead === 'Pe') ? 'Double-Extroverted' : 'Double-Introverted',
+    'I-I-': (leadEnergetic === 'Je' || leadEnergetic === 'Pe') ? 'Double-Extroverted' : 'Double-Introverted',
     'I--I': isJLead ? 'Judgement Polarized' : 'Perception Polarized',
     'III-': isJLead ? 'Judgement Heavy' : 'Perception Heavy',
     'II-I': 'Energy Inverted',
@@ -429,22 +353,22 @@ export interface FunctionMotifs {
 
 export interface DerivedCTData {
   functions: {
-    lead: FunctionCode | null;
-    auxiliary: FunctionCode | null;
-    tertiary: FunctionCode | null;
-    polar: FunctionCode | null;
+    lead: string;
+    auxiliary: string;
+    tertiary: string;
+    polar: string;
   };
   energetics: {
-    lead: EnergeticCode;
-    auxiliary: EnergeticCode;
-    tertiary: EnergeticCode;
-    polar: EnergeticCode;
+    lead: string;
+    auxiliary: string;
+    tertiary: string;
+    polar: string;
   };
   axes: {
     judgment: string;
     perception: string;
   };
-  quadra: Quadra | '';
+  quadra: string;
 }
 
 export function getSubtypeName(subtype: string): string {
@@ -477,59 +401,4 @@ export function slugify(text: string): string {
     .replace(/\s+/g, '-')
     .replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-');
-}
-
-export function deriveCTData(type: string, dbLeadE?: string, dbAuxE?: string): DerivedCTData {
-  const lead = type.substring(0, 2);
-  const aux = type.substring(2, 4);
-
-  let leadE = dbLeadE ? getEnergetic(dbLeadE) : getEnergetic(lead);
-  let auxE = dbAuxE ? getAuxiliaryEnergetic(dbAuxE) : getAuxiliaryEnergetic(aux);
-
-  // If auxE is missing but leadE is present, infer from hierarchy (Division #4)
-  if (!auxE && leadE) {
-    const hierarchy: Record<string, EnergeticCode> = {
-      'Je': 'Pi',
-      'Ji': 'Pe',
-      'Pe': 'Ji',
-      'Pi': 'Je'
-    };
-    auxE = hierarchy[leadE];
-  }
-
-  // If leadE is missing but auxE is present
-  if (!leadE && auxE) {
-    const reverseHierarchy: Record<string, EnergeticCode> = {
-      'Pi': 'Je',
-      'Pe': 'Ji',
-      'Ji': 'Pe',
-      'Je': 'Pi'
-    };
-    leadE = reverseHierarchy[auxE];
-  }
-
-  const tertiaryE = getTertiaryEnergetic(auxE);
-  const polarE = getPolarEnergetic(leadE);
-
-  const isUncertain = (token: string) => ['Ji', 'Je', 'Pe', 'Pi'].includes(token);
-
-  const leadF = isUncertain(lead) ? null : lead as FunctionCode;
-  const auxF = isUncertain(aux) ? null : aux as FunctionCode;
-  const tertiaryF = auxF ? getTertiaryFunction(auxF) : null;
-  const polarF = leadF ? getPolarFunction(leadF) : null;
-
-  return {
-    functions: { lead: leadF, auxiliary: auxF, tertiary: tertiaryF, polar: polarF },
-    energetics: {
-      lead: leadE,
-      auxiliary: auxE,
-      tertiary: tertiaryE,
-      polar: polarE
-    },
-    axes: {
-      judgment: getJudgmentAxis(type),
-      perception: getPerceptionAxis(type)
-    },
-    quadra: getQuadra(type)
-  };
 }
