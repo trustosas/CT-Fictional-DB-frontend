@@ -5,8 +5,9 @@ const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhyird8EfAwfyJ
 
 export async function fetchCharacters(): Promise<Character[]> {
   try {
-    // Adding a timestamp to bypass any potential browser caching
-    const cacheBuster = `&t=${Date.now()}`;
+    // Adding a random string to bypass any potential browser caching
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const cacheBuster = `&t=${randomStr}`;
     const response = await fetch(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + cacheBuster, {
       cache: 'no-store'
     });

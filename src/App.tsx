@@ -125,7 +125,8 @@ function AppContent() {
     const urlPattern = /^https?:\/\//;
     if (urlPattern.test(content.trim())) {
       const url = content.trim();
-      const cacheBuster = `v=${Date.now()}`;
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const cacheBuster = `v=${randomStr}`;
       const bustedUrl = url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
       try {
         const res = await fetch(bustedUrl, { cache: 'no-store' });
