@@ -155,19 +155,26 @@ function AppContent() {
     } else {
       // Handle relative paths by prepending the GitHub raw base URL
       const base = 'https://raw.githubusercontent.com/trustosas/CT-in-Fiction-Analyses';
-      const version = sha || 'main';
-      // Ensure the content is properly encoded for a URL
       const path = trimmedContent.split('/').map(segment => encodeURIComponent(segment)).join('/');
-      url = `${base}/${version}/${path}`;
+      
+      // If we have a SHA, use it directly. Otherwise use refs/heads/main
+      if (sha) {
+        url = `${base}/${sha}/${path}`;
+      } else {
+        url = `${base}/refs/heads/main/${path}`;
+      }
     }
 
     try {
       const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => '');
+        throw new Error(`HTTP error! status: ${res.status}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`);
+      }
       return await res.text();
     } catch (err) {
       console.error('Failed to fetch analysis:', err);
-      return `Failed to load analysis from: ${url}`;
+      return `Failed to load analysis from: ${url}\n\nError: ${err instanceof Error ? err.message : String(err)}`;
     }
   };
 
