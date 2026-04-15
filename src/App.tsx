@@ -1257,7 +1257,7 @@ function AppContent() {
                   {selectedCharacter.alternateType && (
                     <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                       <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Alternate Type</p>
-                      <p className="font-serif italic text-xl leading-none">{selectedCharacter.alternateType}</p>
+                      <p className="font-serif italic text-xl leading-none">{formatTypeDisplay(selectedCharacter.alternateType)}</p>
                     </div>
                   )}
                 </div>
