@@ -383,15 +383,26 @@ function AppContent() {
 
   const developments = useMemo(() => {
     const filtered = viewFilteredCharacters.filter(c => {
-      const ct = c.type ? deriveCTData(c.type) : null;
+      const ct = c.type ? deriveCTData(c.type, c.leadEnergetic, c.auxiliaryEnergetic) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
       const matchesLeadFunction = !selectedLeadFunction || normalizeFunctionCode(c.leadFunction).toLowerCase() === selectedLeadFunction.toLowerCase();
       const matchesAuxFunction = !selectedAuxFunction || normalizeFunctionCode(c.auxiliaryFunction).toLowerCase() === selectedAuxFunction.toLowerCase();
-      const matchesLeadEnergetic = !selectedLeadEnergetic || getEnergetic(c.leadFunction).toLowerCase() === selectedLeadEnergetic.toLowerCase();
-      const matchesAuxEnergetic = !selectedAuxEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction).toLowerCase() === selectedAuxEnergetic.toLowerCase());
+      const matchesLeadEnergetic = !selectedLeadEnergetic || (c.leadEnergetic || getEnergetic(c.leadFunction)).toLowerCase() === selectedLeadEnergetic.toLowerCase();
+      const matchesAuxEnergetic = !selectedAuxEnergetic || (c.auxiliaryEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction))).toLowerCase() === selectedAuxEnergetic.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      return matchesQuadra && matchesLeadFunction && matchesAuxFunction && matchesLeadEnergetic && matchesAuxEnergetic && matchesBehaviourQualia && matchesSubtype;
+      
+      // Lore: Lead and Aux must follow specific oscillation hierarchies
+      let matchesLore = true;
+      const leadE = selectedLeadEnergetic || (c.leadEnergetic || getEnergetic(c.leadFunction));
+      const auxE = selectedAuxEnergetic || (c.auxiliaryEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction)));
+      
+      if (leadE && auxE) {
+        const mapping: Record<string, string> = { 'Je': 'Pi', 'Ji': 'Pe', 'Pe': 'Ji', 'Pi': 'Je' };
+        matchesLore = mapping[leadE] === auxE;
+      }
+      
+      return matchesQuadra && matchesLeadFunction && matchesAuxFunction && matchesLeadEnergetic && matchesAuxEnergetic && matchesBehaviourQualia && matchesSubtype && matchesLore;
     });
     return Array.from(new Set(filtered.map(c => c.finalDevelopment || c.initialDevelopment))).filter(Boolean).filter(i => i.toLowerCase() !== 'all').sort();
   }, [viewFilteredCharacters, selectedQuadra, selectedLeadFunction, selectedAuxFunction, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype]);
@@ -400,12 +411,23 @@ function AppContent() {
     const filtered = viewFilteredCharacters.filter(c => {
       const matchesLeadFunction = !selectedLeadFunction || normalizeFunctionCode(c.leadFunction).toLowerCase() === selectedLeadFunction.toLowerCase();
       const matchesAuxFunction = !selectedAuxFunction || normalizeFunctionCode(c.auxiliaryFunction).toLowerCase() === selectedAuxFunction.toLowerCase();
-      const matchesLeadEnergetic = !selectedLeadEnergetic || getEnergetic(c.leadFunction).toLowerCase() === selectedLeadEnergetic.toLowerCase();
-      const matchesAuxEnergetic = !selectedAuxEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction).toLowerCase() === selectedAuxEnergetic.toLowerCase());
+      const matchesLeadEnergetic = !selectedLeadEnergetic || (c.leadEnergetic || getEnergetic(c.leadFunction)).toLowerCase() === selectedLeadEnergetic.toLowerCase();
+      const matchesAuxEnergetic = !selectedAuxEnergetic || (c.auxiliaryEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction))).toLowerCase() === selectedAuxEnergetic.toLowerCase();
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      return matchesLeadFunction && matchesAuxFunction && matchesLeadEnergetic && matchesAuxEnergetic && matchesDevelopment && matchesBehaviourQualia && matchesSubtype;
+      
+      // Lore: Lead and Aux must follow specific oscillation hierarchies
+      let matchesLore = true;
+      const leadE = selectedLeadEnergetic || (c.leadEnergetic || getEnergetic(c.leadFunction));
+      const auxE = selectedAuxEnergetic || (c.auxiliaryEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction)));
+      
+      if (leadE && auxE) {
+        const mapping: Record<string, string> = { 'Je': 'Pi', 'Ji': 'Pe', 'Pe': 'Ji', 'Pi': 'Je' };
+        matchesLore = mapping[leadE] === auxE;
+      }
+      
+      return matchesLeadFunction && matchesAuxFunction && matchesLeadEnergetic && matchesAuxEnergetic && matchesDevelopment && matchesBehaviourQualia && matchesSubtype && matchesLore;
     });
     const items = filtered.map(c => c.type ? deriveCTData(c.type, c.leadEnergetic, c.auxiliaryEnergetic).quadra : null).filter(Boolean);
     return Array.from(new Set(items as string[])).filter(i => i.toLowerCase() !== 'all').sort();
@@ -1297,7 +1319,7 @@ function AppContent() {
                       <span className="font-serif italic text-xl block leading-none">{selectedCharacter.behaviourQualia}</span>
                     </div>
                   )}
-                  {selectedCharacter.initialDevelopment && selectedCharacter.finalDevelopment && (
+                  {selectedCharacter.initialDevelopment && selectedCharacter.finalDevelopment && selectedCharacter.initialDevelopment !== selectedCharacter.finalDevelopment && (
                     <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                       <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Initial Dev</p>
                       <span className="font-sans text-xl font-bold tracking-[0.2em] block leading-none mb-1">{selectedCharacter.initialDevelopment}</span>
