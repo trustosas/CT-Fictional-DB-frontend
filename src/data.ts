@@ -7,6 +7,8 @@ export interface Character {
   name: string;
   imageUrl: string;
   type: string;
+  leadFunction: string;
+  auxiliaryFunction: string;
   alternateType?: string;
   subtype: string;
   behaviourQualia: string;

@@ -62,6 +62,8 @@ export async function fetchCharacters(): Promise<Character[]> {
               name: name.trim(),
               imageUrl: row[5] || '',
               type: type.trim(),
+              leadFunction: row[9] || '',
+              auxiliaryFunction: row[10] || '',
               alternateType: row[7] || '',
               subtype: row[8] || '',
               behaviourQualia: row[20] || '',

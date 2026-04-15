@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
-import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay } from './lib/ct-logic';
+import { slugify, deriveCTData, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay, getEnergetic } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
 
 type View = 'medium' | 'work' | 'feed';
@@ -104,10 +104,12 @@ function AppContent() {
   const [error, setError] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedQuadra, setSelectedQuadra] = useState<string | null>(null);
   const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(null);
   const [selectedLeadFunction, setSelectedLeadFunction] = useState<string | null>(null);
+  const [selectedAuxFunction, setSelectedAuxFunction] = useState<string | null>(null);
+  const [selectedLeadEnergetic, setSelectedLeadEnergetic] = useState<string | null>(null);
+  const [selectedAuxEnergetic, setSelectedAuxEnergetic] = useState<string | null>(null);
   const [selectedBehaviourQualia, setSelectedBehaviourQualia] = useState<string | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -371,86 +373,118 @@ function AppContent() {
     document.title = title;
   }, [currentView, activeWork, activeMedium, selectedCharacter]);
 
-  const types = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const ct = c.type ? deriveCTData(c.type) : null;
-      return !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+  const viewFilteredCharacters = useMemo(() => {
+    return publishedCharacters.filter(char => {
+      if (currentView === 'work' && activeWork && char.source !== activeWork) return false;
+      if (currentView === 'medium' && activeMedium && char.medium !== activeMedium) return false;
+      return true;
     });
-    return Array.from(new Set(filtered.map(c => c.type)))
-      .filter(t => {
-        if (!t) return false;
-        const ct = deriveCTData(t);
-        return ct.functions.aux !== null; // Only clear type codes (with specific aux)
-      })
-      .sort();
-  }, [publishedCharacters, selectedQuadra]);
+  }, [publishedCharacters, currentView, activeWork, activeMedium]);
 
   const developments = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const matchesType = !selectedType || c.type === selectedType;
+    const filtered = viewFilteredCharacters.filter(c => {
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-      return matchesType && matchesQuadra;
+      return matchesQuadra;
     });
     return Array.from(new Set(filtered.map(c => c.finalDevelopment))).filter(Boolean).sort();
-  }, [publishedCharacters, selectedType, selectedQuadra]);
+  }, [viewFilteredCharacters, selectedQuadra]);
   
   const quadras = useMemo(() => {
-    const items = publishedCharacters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
+    const items = viewFilteredCharacters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
-  }, [publishedCharacters]);
+  }, [viewFilteredCharacters]);
 
   const functions = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const matchesType = !selectedType || c.type === selectedType;
+    const filtered = viewFilteredCharacters.filter(c => {
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-      return matchesType && matchesQuadra;
+      const matchesEnergetic = !selectedLeadEnergetic || getEnergetic(c.leadFunction).toLowerCase() === selectedLeadEnergetic.toLowerCase();
+      return matchesQuadra && matchesEnergetic;
     });
-    const items = filtered.map(c => c.type ? deriveCTData(c.type).functions.lead : null).filter(Boolean);
+    const items = filtered.map(c => c.leadFunction).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
-  }, [publishedCharacters, selectedType, selectedQuadra]);
+  }, [viewFilteredCharacters, selectedQuadra, selectedLeadEnergetic]);
+
+  const energetics = useMemo(() => {
+    const filtered = viewFilteredCharacters.filter(c => {
+      const ct = c.type ? deriveCTData(c.type) : null;
+      const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+      const matchesFunction = !selectedLeadFunction || c.leadFunction.toLowerCase() === selectedLeadFunction.toLowerCase();
+      return matchesQuadra && matchesFunction;
+    });
+    const items = filtered.map(c => getEnergetic(c.leadFunction)).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [viewFilteredCharacters, selectedQuadra, selectedLeadFunction]);
+
+  const auxFunctions = useMemo(() => {
+    const filtered = viewFilteredCharacters.filter(c => {
+      const ct = c.type ? deriveCTData(c.type) : null;
+      const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+      const matchesAuxEnergetic = !selectedAuxEnergetic || (c.auxiliaryFunction && getEnergetic(c.auxiliaryFunction).toLowerCase() === selectedAuxEnergetic.toLowerCase());
+      return matchesQuadra && matchesAuxEnergetic;
+    });
+    const items = filtered.map(c => c.auxiliaryFunction).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [viewFilteredCharacters, selectedQuadra, selectedAuxEnergetic]);
+
+  const auxEnergetics = useMemo(() => {
+    const filtered = viewFilteredCharacters.filter(c => {
+      const ct = c.type ? deriveCTData(c.type) : null;
+      const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
+      const matchesAuxFunction = !selectedAuxFunction || c.auxiliaryFunction.toLowerCase() === selectedAuxFunction.toLowerCase();
+      return matchesQuadra && matchesAuxFunction;
+    });
+    const items = filtered.map(c => c.auxiliaryFunction ? getEnergetic(c.auxiliaryFunction) : null).filter(Boolean);
+    return Array.from(new Set(items as string[])).sort();
+  }, [viewFilteredCharacters, selectedQuadra, selectedAuxFunction]);
 
   const behaviourQualias = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const matchesType = !selectedType || c.type === selectedType;
+    const filtered = viewFilteredCharacters.filter(c => {
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-      return matchesType && matchesQuadra;
+      return matchesQuadra;
     });
     return Array.from(new Set(filtered.map(c => c.behaviourQualia))).filter(Boolean).sort();
-  }, [publishedCharacters, selectedType, selectedQuadra]);
+  }, [viewFilteredCharacters, selectedQuadra]);
 
   const subtypes = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const matchesType = !selectedType || c.type === selectedType;
+    const filtered = viewFilteredCharacters.filter(c => {
       const ct = c.type ? deriveCTData(c.type) : null;
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-      return matchesType && matchesQuadra;
+      return matchesQuadra;
     });
     return Array.from(new Set(filtered.map(c => c.subtype))).filter(Boolean).sort();
-  }, [publishedCharacters, selectedType, selectedQuadra]);
+  }, [viewFilteredCharacters, selectedQuadra]);
 
   // Reset dependent filters if they become invalid
   useEffect(() => {
-    if (selectedType && !types.includes(selectedType)) setSelectedType(null);
-  }, [selectedQuadra, types]);
+    if (selectedLeadFunction && !functions.includes(selectedLeadFunction)) setSelectedLeadFunction(null);
+  }, [selectedQuadra, selectedLeadEnergetic, functions]);
+
+  useEffect(() => {
+    if (selectedLeadEnergetic && !energetics.includes(selectedLeadEnergetic)) setSelectedLeadEnergetic(null);
+  }, [selectedQuadra, selectedLeadFunction, energetics]);
+
+  useEffect(() => {
+    if (selectedAuxFunction && !auxFunctions.includes(selectedAuxFunction)) setSelectedAuxFunction(null);
+  }, [selectedQuadra, selectedAuxEnergetic, auxFunctions]);
+
+  useEffect(() => {
+    if (selectedAuxEnergetic && !auxEnergetics.includes(selectedAuxEnergetic)) setSelectedAuxEnergetic(null);
+  }, [selectedQuadra, selectedAuxFunction, auxEnergetics]);
 
   useEffect(() => {
     if (selectedDevelopment && !developments.includes(selectedDevelopment)) setSelectedDevelopment(null);
-  }, [selectedType, selectedQuadra, developments]);
-
-  useEffect(() => {
-    if (selectedLeadFunction && !functions.includes(selectedLeadFunction)) setSelectedLeadFunction(null);
-  }, [selectedType, selectedQuadra, functions]);
+  }, [selectedQuadra, developments]);
 
   useEffect(() => {
     if (selectedBehaviourQualia && !behaviourQualias.includes(selectedBehaviourQualia)) setSelectedBehaviourQualia(null);
-  }, [selectedType, selectedQuadra, behaviourQualias]);
+  }, [selectedQuadra, behaviourQualias]);
 
   useEffect(() => {
     if (selectedSubtype && !subtypes.includes(selectedSubtype)) setSelectedSubtype(null);
-  }, [selectedType, selectedQuadra, subtypes]);
+  }, [selectedQuadra, subtypes]);
   
   const filteredCharacters = useMemo(() => {
     return publishedCharacters
@@ -461,20 +495,25 @@ function AppContent() {
 
         const matchesSearch = char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                              char.source.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesType = !selectedType || char.type === selectedType;
         
         // Derived data filtering
         const ct = char.type ? deriveCTData(char.type) : null;
         const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-        const matchesFunction = !selectedLeadFunction || (ct && ct.functions.lead.toLowerCase() === selectedLeadFunction.toLowerCase());
+        
+        // Function/Energetic filtering
+        const matchesLeadFunction = !selectedLeadFunction || char.leadFunction.toLowerCase() === selectedLeadFunction.toLowerCase();
+        const matchesAuxFunction = !selectedAuxFunction || char.auxiliaryFunction.toLowerCase() === selectedAuxFunction.toLowerCase();
+        const matchesLeadEnergetic = !selectedLeadEnergetic || getEnergetic(char.leadFunction).toLowerCase() === selectedLeadEnergetic.toLowerCase();
+        const matchesAuxEnergetic = !selectedAuxEnergetic || (char.auxiliaryFunction && getEnergetic(char.auxiliaryFunction).toLowerCase() === selectedAuxEnergetic.toLowerCase());
+        
+        const matchesDevelopment = !selectedDevelopment || 
+                              (char.finalDevelopment && char.finalDevelopment.toLowerCase() === selectedDevelopment.toLowerCase());
         const matchesBehaviourQualia = !selectedBehaviourQualia || char.behaviourQualia === selectedBehaviourQualia;
         const matchesSubtype = !selectedSubtype || char.subtype === selectedSubtype;
         
-        // Development filtering (case-insensitive for robustness)
-        const matchesDevelopment = !selectedDevelopment || 
-                              (char.finalDevelopment && char.finalDevelopment.toLowerCase() === selectedDevelopment.toLowerCase());
-
-        return matchesSearch && matchesType && matchesQuadra && matchesDevelopment && matchesFunction && matchesBehaviourQualia && matchesSubtype;
+        return matchesSearch && matchesQuadra && matchesLeadFunction && matchesAuxFunction && 
+               matchesLeadEnergetic && matchesAuxEnergetic && matchesDevelopment && 
+               matchesBehaviourQualia && matchesSubtype;
       })
       .sort((a, b) => {
         // Sort by publishedDate descending (newest first)
@@ -482,11 +521,11 @@ function AppContent() {
         const dateB = b.publishedDate || '';
         return dateB.localeCompare(dateA);
       });
-  }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, selectedType, selectedQuadra, selectedLeadFunction, selectedDevelopment, selectedBehaviourQualia, selectedSubtype]);
+  }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, selectedQuadra, selectedLeadEnergetic, selectedAuxEnergetic, selectedLeadFunction, selectedAuxFunction, selectedDevelopment, selectedBehaviourQualia, selectedSubtype]);
 
   const currentWorkData = activeWork ? works.find(w => w.title === activeWork) : null;
 
-  const CustomSelect = ({ 
+    const CustomSelect = ({ 
     label, 
     value, 
     options, 
@@ -501,6 +540,26 @@ function AppContent() {
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [scrollProgress, setScrollProgress] = useState(0);
+
+    const ENERGETIC_NAMES: Record<string, string> = {
+      'Ji': 'Introverted Judgment',
+      'Je': 'Extroverted Judgment',
+      'Pi': 'Introverted Perception',
+      'Pe': 'Extroverted Perception'
+    };
+
+    const FUNCTION_NAMES: Record<string, string> = {
+      'Fi': 'Introverted Feeling',
+      'Te': 'Extroverted Thinking',
+      'Ti': 'Introverted Thinking',
+      'Fe': 'Extroverted Feeling',
+      'Ne': 'Extroverted Intuition',
+      'Si': 'Introverted Sensing',
+      'Se': 'Extroverted Sensing',
+      'Ni': 'Introverted Intuition'
+    };
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -511,6 +570,12 @@ function AppContent() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.currentTarget;
+      const progress = target.scrollTop / (target.scrollHeight - target.clientHeight);
+      setScrollProgress(isNaN(progress) ? 0 : progress);
+    };
 
     return (
       <div className="flex flex-col gap-1.5 group relative" ref={containerRef}>
@@ -528,15 +593,23 @@ function AppContent() {
             {label === 'Development' && value ? (
               <span className="flex items-center gap-3">
                 <span className="font-sans tracking-[0.2em] whitespace-nowrap">{value}</span>
-                <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getDevelopmentName(value, selectedType || '', selectedBehaviourQualia || undefined)}</span>
+                <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getDevelopmentName(value, '', selectedBehaviourQualia || undefined)}</span>
               </span>
             ) : label === 'Subtype' && value ? (
               <span className="flex items-center gap-3">
                 <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getSubtypeName(value)}</span>
               </span>
-            ) : label === 'Type' && value ? (
-              formatTypeDisplay(value)
+            ) : (label === 'Lead Energetic' || label === 'Aux Energetic' || label === 'Auxiliary Energetic') && value ? (
+              <span className="flex items-center gap-3">
+                <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
+                <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{ENERGETIC_NAMES[value]}</span>
+              </span>
+            ) : (label === 'Lead Function' || label === 'Aux Function' || label === 'Auxiliary Function') && value ? (
+              <span className="flex items-center gap-3">
+                <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
+                <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{FUNCTION_NAMES[value]}</span>
+              </span>
             ) : (value || placeholder)}
           </span>
           <ChevronDown className={`w-3 h-3 transition-transform duration-300 pointer-events-none ${isOpen ? 'rotate-180' : 'opacity-50 group-hover:opacity-100'}`} />
@@ -549,39 +622,60 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#1a1a1a]/20 shadow-2xl z-[100] max-h-60 overflow-y-auto no-scrollbar"
+              className="absolute top-full left-0 right-0 mt-2 bg-[#f5f2ed] border border-[#1a1a1a]/20 shadow-2xl z-[100] overflow-hidden"
             >
-              <button 
-                onClick={(e) => { e.stopPropagation(); onChange(null); setIsOpen(false); }}
-                className="w-full px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5"
+              <div 
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="max-h-[160px] overflow-y-auto minimal-scrollbar"
               >
-                {placeholder}
-                {value === null && <Check className="w-3 h-3" />}
-              </button>
-              {options.map(opt => (
                 <button 
-                  key={opt}
-                  onClick={(e) => { e.stopPropagation(); onChange(opt); setIsOpen(false); }}
-                  className="w-full px-4 py-3 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5 last:border-0"
+                  onClick={(e) => { e.stopPropagation(); onChange(null); setIsOpen(false); }}
+                  className="w-full px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-left hover:bg-[#1a1a1a]/5 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5"
                 >
-                  <div className="flex flex-col gap-0.5">
-                      {label === 'Development' ? (
-                        <>
-                          <span className="font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap">{opt}</span>
-                          <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getDevelopmentName(opt, selectedType || '', selectedBehaviourQualia || undefined)}</span>
-                        </>
-                      ) : label === 'Subtype' ? (
-                        <>
-                          <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
-                          <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{getSubtypeName(opt)}</span>
-                        </>
-                      ) : label === 'Type' ? (
-                        formatTypeDisplay(opt)
-                      ) : opt}
-                  </div>
-                  {value === opt && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
+                  {placeholder}
+                  {value === null && <Check className="w-3 h-3" />}
                 </button>
-              ))}
+                {options.map(opt => (
+                  <button 
+                    key={opt}
+                    onClick={(e) => { e.stopPropagation(); onChange(opt); setIsOpen(false); }}
+                    className="w-full px-4 py-3 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/5 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5 last:border-0"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                        {label === 'Development' ? (
+                          <>
+                            <span className="font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap">{opt}</span>
+                            <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getDevelopmentName(opt, '', selectedBehaviourQualia || undefined)}</span>
+                          </>
+                        ) : label === 'Subtype' ? (
+                          <>
+                            <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
+                            <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{getSubtypeName(opt)}</span>
+                          </>
+                        ) : (label === 'Lead Energetic' || label === 'Aux Energetic' || label === 'Auxiliary Energetic') ? (
+                          <>
+                            <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
+                            <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{ENERGETIC_NAMES[opt]}</span>
+                          </>
+                        ) : (label === 'Lead Function' || label === 'Aux Function' || label === 'Auxiliary Function') ? (
+                          <>
+                            <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
+                            <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{FUNCTION_NAMES[opt]}</span>
+                          </>
+                        ) : opt}
+                    </div>
+                    {value === opt && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
+                  </button>
+                ))}
+              </div>
+              {/* Progress Indicator */}
+              <div className="h-[1px] w-full bg-[#1a1a1a]/5">
+                <motion.div 
+                  className="h-full bg-[#1a1a1a]/40"
+                  style={{ width: `${scrollProgress * 100}%` }}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -837,63 +931,79 @@ function AppContent() {
                     exit={{ height: 0, opacity: 0 }}
                     className="z-50"
                   >
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 pt-4">
                       <CustomSelect 
                         label="Quadra"
                         value={selectedQuadra}
                         options={quadras}
                         onChange={setSelectedQuadra}
-                        placeholder="All Quadras"
-                      />
-                      <CustomSelect 
-                        label="Type"
-                        value={selectedType}
-                        options={types}
-                        onChange={setSelectedType}
-                        placeholder="All Types"
-                      />
-                      <CustomSelect 
-                        label="Development"
-                        value={selectedDevelopment}
-                        options={developments}
-                        onChange={setSelectedDevelopment}
-                        placeholder="All Developments"
+                        placeholder="All"
                       />
                       <CustomSelect 
                         label="Qualia"
                         value={selectedBehaviourQualia}
                         options={behaviourQualias}
                         onChange={setSelectedBehaviourQualia}
-                        placeholder="All Qualias"
+                        placeholder="All"
                       />
                       <CustomSelect 
-                        label="Subtype"
-                        value={selectedSubtype}
-                        options={subtypes}
-                        onChange={setSelectedSubtype}
-                        placeholder="All Subtypes"
+                        label="Lead Energetic"
+                        value={selectedLeadEnergetic}
+                        options={energetics}
+                        onChange={setSelectedLeadEnergetic}
+                        placeholder="All"
+                      />
+                      <CustomSelect 
+                        label="Auxiliary Energetic"
+                        value={selectedAuxEnergetic}
+                        options={auxEnergetics}
+                        onChange={setSelectedAuxEnergetic}
+                        placeholder="All"
                       />
                       <CustomSelect 
                         label="Lead Function"
                         value={selectedLeadFunction}
                         options={functions}
                         onChange={setSelectedLeadFunction}
-                        placeholder="All Functions"
+                        placeholder="All"
+                      />
+                      <CustomSelect 
+                        label="Auxiliary Function"
+                        value={selectedAuxFunction}
+                        options={auxFunctions}
+                        onChange={setSelectedAuxFunction}
+                        placeholder="All"
+                      />
+                      <CustomSelect 
+                        label="Development"
+                        value={selectedDevelopment}
+                        options={developments}
+                        onChange={setSelectedDevelopment}
+                        placeholder="All"
+                      />
+                      <CustomSelect 
+                        label="Subtype"
+                        value={selectedSubtype}
+                        options={subtypes}
+                        onChange={setSelectedSubtype}
+                        placeholder="All"
                       />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {(selectedQuadra || selectedType || selectedDevelopment || selectedLeadFunction || selectedBehaviourQualia || selectedSubtype) && (
+              {(selectedQuadra || selectedDevelopment || selectedLeadFunction || selectedAuxFunction || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype) && (
                 <div className="pt-2">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedQuadra(null);
-                      setSelectedType(null);
                       setSelectedDevelopment(null);
                       setSelectedLeadFunction(null);
+                      setSelectedAuxFunction(null);
+                      setSelectedLeadEnergetic(null);
+                      setSelectedAuxEnergetic(null);
                       setSelectedBehaviourQualia(null);
                       setSelectedSubtype(null);
                     }}
