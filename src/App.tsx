@@ -141,26 +141,34 @@ function AppContent() {
 
   const fetchAnalysisMarkdown = async (content: string, sha?: string | null) => {
     if (!content) return '';
+    const trimmedContent = content.trim();
     const urlPattern = /^https?:\/\//;
-    if (urlPattern.test(content.trim())) {
-      let url = content.trim();
-      
+    let url = '';
+
+    if (urlPattern.test(trimmedContent)) {
+      url = trimmedContent;
       // If it's a GitHub raw URL and we have a SHA, use it for deterministic cache busting
       if (url.includes('raw.githubusercontent.com') && sha) {
-        // Replace branch references with the specific commit SHA
         url = url.replace('/refs/heads/main/', `/${sha}/`);
         url = url.replace('/main/', `/${sha}/`);
       }
-
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        return await res.text();
-      } catch (err) {
-        console.error('Failed to fetch analysis:', err);
-        return `Failed to load analysis from: ${content}`;
-      }
+    } else {
+      // Handle relative paths by prepending the GitHub raw base URL
+      const base = 'https://raw.githubusercontent.com/trustosas/CT-in-Fiction-Analyses';
+      const version = sha || 'main';
+      // Ensure the content is properly encoded for a URL
+      const path = trimmedContent.split('/').map(segment => encodeURIComponent(segment)).join('/');
+      url = `${base}/${version}/${path}`;
     }
-    return content;
+
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.text();
+    } catch (err) {
+      console.error('Failed to fetch analysis:', err);
+      return `Failed to load analysis from: ${url}`;
+    }
   };
 
   const loadData = async (isSilent = false) => {
