@@ -729,12 +729,12 @@ function AppContent() {
                 <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getSubtypeName(value)}</span>
               </span>
-            ) : (label === 'Lead Energetic' || label === 'Aux Energetic' || label === 'Auxiliary Energetic') && value ? (
+            ) : (label === 'Lead Energetic' || label === 'Auxiliary Energetic') && value ? (
               <span className="flex items-center gap-3">
                 <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{ENERGETIC_NAMES[value]}</span>
               </span>
-            ) : (label === 'Lead Function' || label === 'Aux Function' || label === 'Auxiliary Function') && value ? (
+            ) : (label === 'Lead Function' || label === 'Auxiliary Function') && value ? (
               <span className="flex items-center gap-3">
                 <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{FUNCTION_NAMES[value]}</span>
@@ -782,12 +782,12 @@ function AppContent() {
                             <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
                             <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{getSubtypeName(opt)}</span>
                           </>
-                        ) : (label === 'Lead Energetic' || label === 'Aux Energetic' || label === 'Auxiliary Energetic') ? (
+                        ) : (label === 'Lead Energetic' || label === 'Auxiliary Energetic') ? (
                           <>
                             <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
                             <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{ENERGETIC_NAMES[opt]}</span>
                           </>
-                        ) : (label === 'Lead Function' || label === 'Aux Function' || label === 'Auxiliary Function') ? (
+                        ) : (label === 'Lead Function' || label === 'Auxiliary Function') ? (
                           <>
                             <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
                             <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{FUNCTION_NAMES[opt]}</span>

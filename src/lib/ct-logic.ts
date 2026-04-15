@@ -263,7 +263,7 @@ export function normalizeFunctionCode(func: string): string {
   if (!func) return '';
   const trimmed = func.trim();
   
-  // 1. Check if it's already a code (e.g. "Se", "Se-lead", "Se-aux", "Je")
+  // 1. Check if it's already a code (e.g. "Se", "Se-lead", "Se-auxiliary", "Je")
   const code = trimmed.substring(0, 2);
   if (FUNCTION_NAMES[code] || ENERGETIC_NAMES[code]) return code;
   
@@ -294,11 +294,11 @@ export function normalizeFunctionCode(func: string): string {
   return '';
 }
 
-export function getAuxEnergetic(aux: string): EnergeticCode {
+export function getAuxiliaryEnergetic(aux: string): EnergeticCode {
   return getEnergetic(aux);
 }
 
-export function getTertEnergetic(auxE: EnergeticCode): EnergeticCode {
+export function getTertiaryEnergetic(auxE: EnergeticCode): EnergeticCode {
   return ENERGETIC_OPPOSITES[auxE];
 }
 
@@ -430,14 +430,14 @@ export interface FunctionMotifs {
 export interface DerivedCTData {
   functions: {
     lead: FunctionCode | null;
-    aux: FunctionCode | null;
-    tert: FunctionCode | null;
+    auxiliary: FunctionCode | null;
+    tertiary: FunctionCode | null;
     polar: FunctionCode | null;
   };
   energetics: {
     lead: EnergeticCode;
-    aux: EnergeticCode;
-    tert: EnergeticCode;
+    auxiliary: EnergeticCode;
+    tertiary: EnergeticCode;
     polar: EnergeticCode;
   };
   axes: {
@@ -484,7 +484,7 @@ export function deriveCTData(type: string, dbLeadE?: string, dbAuxE?: string): D
   const aux = type.substring(2, 4);
 
   let leadE = dbLeadE ? getEnergetic(dbLeadE) : getEnergetic(lead);
-  let auxE = dbAuxE ? getAuxEnergetic(dbAuxE) : getAuxEnergetic(aux);
+  let auxE = dbAuxE ? getAuxiliaryEnergetic(dbAuxE) : getAuxiliaryEnergetic(aux);
 
   // If auxE is missing but leadE is present, infer from hierarchy (Division #4)
   if (!auxE && leadE) {
@@ -508,22 +508,22 @@ export function deriveCTData(type: string, dbLeadE?: string, dbAuxE?: string): D
     leadE = reverseHierarchy[auxE];
   }
 
-  const tertE = getTertEnergetic(auxE);
+  const tertiaryE = getTertiaryEnergetic(auxE);
   const polarE = getPolarEnergetic(leadE);
 
   const isUncertain = (token: string) => ['Ji', 'Je', 'Pe', 'Pi'].includes(token);
 
   const leadF = isUncertain(lead) ? null : lead as FunctionCode;
   const auxF = isUncertain(aux) ? null : aux as FunctionCode;
-  const tertF = auxF ? getTertiaryFunction(auxF) : null;
+  const tertiaryF = auxF ? getTertiaryFunction(auxF) : null;
   const polarF = leadF ? getPolarFunction(leadF) : null;
 
   return {
-    functions: { lead: leadF, aux: auxF, tert: tertF, polar: polarF },
+    functions: { lead: leadF, auxiliary: auxF, tertiary: tertiaryF, polar: polarF },
     energetics: {
       lead: leadE,
-      aux: auxE,
-      tert: tertE,
+      auxiliary: auxE,
+      tertiary: tertiaryE,
       polar: polarE
     },
     axes: {
