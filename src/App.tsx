@@ -107,7 +107,6 @@ function AppContent() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedQuadra, setSelectedQuadra] = useState<string | null>(null);
   const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(null);
-  const [selectedLeadEnergetic, setSelectedLeadEnergetic] = useState<string | null>(null);
   const [selectedLeadFunction, setSelectedLeadFunction] = useState<string | null>(null);
   const [selectedBehaviourQualia, setSelectedBehaviourQualia] = useState<string | null>(null);
   const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
@@ -377,7 +376,13 @@ function AppContent() {
       const ct = c.type ? deriveCTData(c.type) : null;
       return !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
     });
-    return Array.from(new Set(filtered.map(c => c.type))).sort();
+    return Array.from(new Set(filtered.map(c => c.type)))
+      .filter(t => {
+        if (!t) return false;
+        const ct = deriveCTData(t);
+        return ct.functions.aux !== null; // Only clear type codes (with specific aux)
+      })
+      .sort();
   }, [publishedCharacters, selectedQuadra]);
 
   const developments = useMemo(() => {
@@ -387,24 +392,13 @@ function AppContent() {
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
       return matchesType && matchesQuadra;
     });
-    return Array.from(new Set(filtered.map(c => c.finalDevelopment))).sort();
+    return Array.from(new Set(filtered.map(c => c.finalDevelopment))).filter(Boolean).sort();
   }, [publishedCharacters, selectedType, selectedQuadra]);
   
   const quadras = useMemo(() => {
     const items = publishedCharacters.map(c => c.type ? deriveCTData(c.type).quadra : null).filter(Boolean);
     return Array.from(new Set(items as string[])).sort();
   }, [publishedCharacters]);
-
-  const energetics = useMemo(() => {
-    const filtered = publishedCharacters.filter(c => {
-      const matchesType = !selectedType || c.type === selectedType;
-      const ct = c.type ? deriveCTData(c.type) : null;
-      const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-      return matchesType && matchesQuadra;
-    });
-    const items = filtered.map(c => c.type ? deriveCTData(c.type).energetics.lead : null).filter(Boolean);
-    return Array.from(new Set(items as string[])).sort();
-  }, [publishedCharacters, selectedType, selectedQuadra]);
 
   const functions = useMemo(() => {
     const filtered = publishedCharacters.filter(c => {
@@ -424,7 +418,7 @@ function AppContent() {
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
       return matchesType && matchesQuadra;
     });
-    return Array.from(new Set(filtered.map(c => c.behaviourQualia))).sort();
+    return Array.from(new Set(filtered.map(c => c.behaviourQualia))).filter(Boolean).sort();
   }, [publishedCharacters, selectedType, selectedQuadra]);
 
   const subtypes = useMemo(() => {
@@ -434,7 +428,7 @@ function AppContent() {
       const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
       return matchesType && matchesQuadra;
     });
-    return Array.from(new Set(filtered.map(c => c.subtype))).sort();
+    return Array.from(new Set(filtered.map(c => c.subtype))).filter(Boolean).sort();
   }, [publishedCharacters, selectedType, selectedQuadra]);
 
   // Reset dependent filters if they become invalid
@@ -445,10 +439,6 @@ function AppContent() {
   useEffect(() => {
     if (selectedDevelopment && !developments.includes(selectedDevelopment)) setSelectedDevelopment(null);
   }, [selectedType, selectedQuadra, developments]);
-
-  useEffect(() => {
-    if (selectedLeadEnergetic && !energetics.includes(selectedLeadEnergetic)) setSelectedLeadEnergetic(null);
-  }, [selectedType, selectedQuadra, energetics]);
 
   useEffect(() => {
     if (selectedLeadFunction && !functions.includes(selectedLeadFunction)) setSelectedLeadFunction(null);
@@ -476,7 +466,6 @@ function AppContent() {
         // Derived data filtering
         const ct = char.type ? deriveCTData(char.type) : null;
         const matchesQuadra = !selectedQuadra || (ct && ct.quadra.toLowerCase() === selectedQuadra.toLowerCase());
-        const matchesEnergetic = !selectedLeadEnergetic || (ct && ct.energetics.lead.toLowerCase() === selectedLeadEnergetic.toLowerCase());
         const matchesFunction = !selectedLeadFunction || (ct && ct.functions.lead.toLowerCase() === selectedLeadFunction.toLowerCase());
         const matchesBehaviourQualia = !selectedBehaviourQualia || char.behaviourQualia === selectedBehaviourQualia;
         const matchesSubtype = !selectedSubtype || char.subtype === selectedSubtype;
@@ -485,7 +474,7 @@ function AppContent() {
         const matchesDevelopment = !selectedDevelopment || 
                               (char.finalDevelopment && char.finalDevelopment.toLowerCase() === selectedDevelopment.toLowerCase());
 
-        return matchesSearch && matchesType && matchesQuadra && matchesDevelopment && matchesEnergetic && matchesFunction && matchesBehaviourQualia && matchesSubtype;
+        return matchesSearch && matchesType && matchesQuadra && matchesDevelopment && matchesFunction && matchesBehaviourQualia && matchesSubtype;
       })
       .sort((a, b) => {
         // Sort by publishedDate descending (newest first)
@@ -493,7 +482,7 @@ function AppContent() {
         const dateB = b.publishedDate || '';
         return dateB.localeCompare(dateA);
       });
-  }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, selectedType, selectedQuadra, selectedLeadEnergetic, selectedLeadFunction, selectedDevelopment, selectedBehaviourQualia, selectedSubtype]);
+  }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, selectedType, selectedQuadra, selectedLeadFunction, selectedDevelopment, selectedBehaviourQualia, selectedSubtype]);
 
   const currentWorkData = activeWork ? works.find(w => w.title === activeWork) : null;
 
@@ -564,31 +553,33 @@ function AppContent() {
             >
               <button 
                 onClick={(e) => { e.stopPropagation(); onChange(null); setIsOpen(false); }}
-                className="w-full px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5"
+                className="w-full px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5"
               >
                 {placeholder}
-                {!value && <Check className="w-3 h-3" />}
+                {value === null && <Check className="w-3 h-3" />}
               </button>
               {options.map(opt => (
                 <button 
                   key={opt}
                   onClick={(e) => { e.stopPropagation(); onChange(opt); setIsOpen(false); }}
-                  className="w-full px-4 py-2 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between"
+                  className="w-full px-4 py-3 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/10 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5 last:border-0"
                 >
+                  <div className="flex flex-col gap-0.5">
                       {label === 'Development' ? (
-                        <span className="flex items-center gap-3">
+                        <>
                           <span className="font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap">{opt}</span>
                           <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getDevelopmentName(opt, selectedType || '', selectedBehaviourQualia || undefined)}</span>
-                        </span>
+                        </>
                       ) : label === 'Subtype' ? (
-                        <span className="flex items-center gap-3">
+                        <>
                           <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
-                          <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getSubtypeName(opt)}</span>
-                        </span>
+                          <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{getSubtypeName(opt)}</span>
+                        </>
                       ) : label === 'Type' ? (
                         formatTypeDisplay(opt)
                       ) : opt}
-                  {value === opt && <Check className="w-3 h-3" />}
+                  </div>
+                  {value === opt && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
                 </button>
               ))}
             </motion.div>
@@ -883,13 +874,6 @@ function AppContent() {
                         placeholder="All Subtypes"
                       />
                       <CustomSelect 
-                        label="Lead Energetic"
-                        value={selectedLeadEnergetic}
-                        options={energetics}
-                        onChange={setSelectedLeadEnergetic}
-                        placeholder="All Energetics"
-                      />
-                      <CustomSelect 
                         label="Lead Function"
                         value={selectedLeadFunction}
                         options={functions}
@@ -901,7 +885,7 @@ function AppContent() {
                 )}
               </AnimatePresence>
 
-              {(selectedQuadra || selectedType || selectedDevelopment || selectedLeadEnergetic || selectedLeadFunction || selectedBehaviourQualia || selectedSubtype) && (
+              {(selectedQuadra || selectedType || selectedDevelopment || selectedLeadFunction || selectedBehaviourQualia || selectedSubtype) && (
                 <div className="pt-2">
                   <button 
                     onClick={(e) => {
@@ -909,7 +893,6 @@ function AppContent() {
                       setSelectedQuadra(null);
                       setSelectedType(null);
                       setSelectedDevelopment(null);
-                      setSelectedLeadEnergetic(null);
                       setSelectedLeadFunction(null);
                       setSelectedBehaviourQualia(null);
                       setSelectedSubtype(null);
