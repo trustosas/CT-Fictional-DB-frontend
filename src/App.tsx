@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
-import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check } from 'lucide-react';
+import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
@@ -73,11 +73,11 @@ const pluralize = (count: number, singular: string, plural?: string) => {
   return plural || `${singular}s`;
 };
 
-function MarkdownAnalysis({ content }: { content: string }) {
+function MarkdownAnalysis({ content, refreshTrigger }: { content: string, refreshTrigger?: number }) {
   const [markdown, setMarkdown] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchAnalysis = () => {
     if (!content) {
       setMarkdown('');
       return;
@@ -105,19 +105,23 @@ function MarkdownAnalysis({ content }: { content: string }) {
     } else {
       setMarkdown(content);
     }
-  }, [content]);
+  };
+
+  useEffect(() => {
+    fetchAnalysis();
+  }, [content, refreshTrigger]);
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-8 border border-[#1a1a1a]/5 rounded bg-[#1a1a1a]/5 justify-center mb-6">
-        <Loader2 className="w-4 h-4 animate-spin opacity-40" />
+      <div className="flex flex-col items-center gap-3 py-12 border border-[#1a1a1a]/5 rounded bg-[#1a1a1a]/5 justify-center mb-6">
+        <Loader2 className="w-6 h-6 animate-spin opacity-20" />
         <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">Decrypting Analysis...</span>
       </div>
     );
   }
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 relative group">
       <div className="prose prose-sm max-w-none prose-neutral opacity-90 leading-relaxed font-serif text-lg">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {markdown}
@@ -159,26 +163,38 @@ function AppContent() {
   const [motifAnchor, setMotifAnchor] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const data = await fetchCharacters();
-        if (data && data.length > 0) {
-          setCharacters(data);
-          setError(null);
-        } else {
-          setError('Database is empty or inaccessible. Please check "Publish to Web" settings.');
-        }
-      } catch (err) {
-        console.error('Failed to load dynamic data:', err);
-        setError('Sync Failed. Ensure Spreadsheet is "Published to Web" as CSV.');
-      } finally {
-        setIsLoading(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const loadData = async (isSilent = false) => {
+    try {
+      if (!isSilent) setIsLoading(true);
+      const data = await fetchCharacters();
+      if (data && data.length > 0) {
+        setCharacters(data);
+        setError(null);
+        // Increment refresh trigger to force child components (like MarkdownAnalysis) to re-fetch
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        setError('Database is empty or inaccessible. Please check "Publish to Web" settings.');
       }
+    } catch (err) {
+      console.error('Failed to load dynamic data:', err);
+      setError('Sync Failed. Ensure Spreadsheet is "Published to Web" as CSV.');
+    } finally {
+      if (!isSilent) setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
+
+  // Refetch data when navigating to a subject page to ensure latest analysis URL and data
+  useEffect(() => {
+    if (subjectSlug) {
+      loadData(true); // Silent refresh
+    }
+  }, [subjectSlug]);
 
   const publishedCharacters = useMemo(() => {
     return characters.filter(c => c.isPublished);
@@ -986,12 +1002,21 @@ function AppContent() {
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               >
-                <button 
-                  onClick={() => handleSelectCharacter(null)}
-                  className="absolute top-8 right-8 p-2 hover:bg-black/5 rounded-full transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="absolute top-8 right-8 flex items-center gap-2">
+                  <button 
+                    onClick={() => loadData(true)}
+                    className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                    title="Refresh Data"
+                  >
+                    <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button 
+                    onClick={() => handleSelectCharacter(null)}
+                    className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
                 <div className="mb-12">
                   <span className="font-mono text-xs uppercase tracking-[0.2em] opacity-40 mb-4 block">
@@ -1168,7 +1193,7 @@ function AppContent() {
                       <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
                         <Activity className="w-3 h-3" /> Analysis
                       </h4>
-                      <MarkdownAnalysis content={selectedCharacter.analysis} />
+                      <MarkdownAnalysis content={selectedCharacter.analysis} refreshTrigger={refreshTrigger} />
                       
                       <div className="flex flex-col gap-6 pt-6 border-t border-[#1a1a1a]/10">
                         {selectedCharacter.publishedDate && (
