@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
-import { slugify, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay, normalizeFunctionCode, ENERGETIC_NAMES, FUNCTION_NAMES, FUNCTION_ORDER, getEmotionalDescriptor, getAllMotifs } from './lib/ct-logic';
+import { slugify, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay, normalizeFunctionCode, ENERGETIC_NAMES, FUNCTION_NAMES, FUNCTION_ORDER, getEmotionalDescriptor, getEmotionalCategory, checkEmotionalMatch, getAllMotifs } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
 
 type View = 'medium' | 'work' | 'feed';
@@ -413,11 +413,7 @@ function AppContent() {
       const matchesAuxEnergetic = !selectedAuxEnergetic || c.auxiliaryEnergetic.toLowerCase() === selectedAuxEnergetic.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -435,11 +431,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -458,11 +450,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -481,11 +469,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -504,11 +488,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -527,11 +507,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -550,11 +526,7 @@ function AppContent() {
       const matchesAuxEnergetic = !selectedAuxEnergetic || c.auxiliaryEnergetic.toLowerCase() === selectedAuxEnergetic.toLowerCase();
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesSubtype = !selectedSubtype || c.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -572,11 +544,7 @@ function AppContent() {
       const matchesAuxEnergetic = !selectedAuxEnergetic || c.auxiliaryEnergetic.toLowerCase() === selectedAuxEnergetic.toLowerCase();
       const matchesDevelopment = !selectedDevelopment || (c.finalDevelopment || c.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || c.behaviourQualia === selectedBehaviourQualia;
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     c.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (c.emotionalAttitude && c.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(c.emotionalAttitude, c.judgmentAxis, selectedEmotionalAttitude);
       const matchesMotifs = selectedMotifs.length === 0 || 
                            (c.motifValues && selectedMotifs.every(idx => c.motifValues![idx]));
       
@@ -595,11 +563,7 @@ function AppContent() {
       const matchesDevelopment = !selectedDevelopment || (char.finalDevelopment || char.initialDevelopment).toLowerCase() === selectedDevelopment.toLowerCase();
       const matchesBehaviourQualia = !selectedBehaviourQualia || char.behaviourQualia === selectedBehaviourQualia;
       const matchesSubtype = !selectedSubtype || char.subtype === selectedSubtype;
-      const descriptor = getEmotionalDescriptor(char.emotionalAttitude, char.judgmentAxis);
-      const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                     char.emotionalAttitude === selectedEmotionalAttitude || 
-                                     descriptor === selectedEmotionalAttitude ||
-                                     (char.emotionalAttitude && char.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+      const matchesEmotionalAttitude = checkEmotionalMatch(char.emotionalAttitude, char.judgmentAxis, selectedEmotionalAttitude);
 
       return matchesQuadra && matchesJudgmentAxis && matchesPerceptionAxis && 
              matchesLeadEnergetic && matchesAuxEnergetic && matchesDevelopment && 
@@ -640,19 +604,11 @@ function AppContent() {
     const items = new Set<string>();
     
     filtered.forEach(c => {
-      if (c.emotionalAttitude) {
-        // Use "Neutral" for "Balanced" as per user instructions
-        if (c.emotionalAttitude === 'Balanced') {
-          items.add('Neutral');
-        } else {
-          items.add(c.emotionalAttitude);
-        }
-      }
-      const descriptor = getEmotionalDescriptor(c.emotionalAttitude, c.judgmentAxis);
-      if (descriptor) items.add(descriptor);
+      const category = getEmotionalCategory(c.emotionalAttitude);
+      if (category) items.add(category);
     });
     
-    const order = ['Unguarded', 'Adaptive', 'Seelie', 'Guarded', 'Directive', 'Unseelie', 'Neutral'];
+    const order = ['Unguarded', 'Guarded', 'Neutral'];
     return Array.from(items).filter(Boolean).sort((a, b) => {
       const indexA = order.indexOf(a);
       const indexB = order.indexOf(b);
@@ -729,11 +685,7 @@ function AppContent() {
         const matchesBehaviourQualia = !selectedBehaviourQualia || char.behaviourQualia === selectedBehaviourQualia;
         const matchesSubtype = !selectedSubtype || char.subtype === selectedSubtype;
         
-        const descriptor = getEmotionalDescriptor(char.emotionalAttitude, char.judgmentAxis);
-        const matchesEmotionalAttitude = !selectedEmotionalAttitude || 
-                                       char.emotionalAttitude === selectedEmotionalAttitude || 
-                                       descriptor === selectedEmotionalAttitude ||
-                                       (char.emotionalAttitude && char.emotionalAttitude.toLowerCase().includes(selectedEmotionalAttitude.toLowerCase()));
+        const matchesEmotionalAttitude = checkEmotionalMatch(char.emotionalAttitude, char.judgmentAxis, selectedEmotionalAttitude);
 
         const matchesMotifs = selectedMotifs.length === 0 || 
                              (char.motifValues && selectedMotifs.every(idx => char.motifValues![idx]));

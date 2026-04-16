@@ -395,30 +395,40 @@ export function getSubtypeName(subtype: string): string {
   return mapping[subtype] || '';
 }
 
+export function getEmotionalCategory(attitude: string): string {
+  if (!attitude) return '';
+  const lower = attitude.toLowerCase();
+  if (lower.includes('balanced') || lower === 'neutral') return 'Neutral';
+  if (lower.includes('unguarded') || lower === 'adaptive' || lower === 'seelie') return 'Unguarded';
+  if (lower.includes('guarded') || lower === 'directive' || lower === 'unseelie') return 'Guarded';
+  return attitude;
+}
+
 export function getEmotionalDescriptor(attitude: string, axis: string): string | null {
   if (!attitude) return null;
-  const lowerAttitude = attitude.toLowerCase();
-  const isBalanced = lowerAttitude.includes('balanced');
+  const category = getEmotionalCategory(attitude);
   
-  if (isBalanced) return 'Neutral';
+  if (category === 'Neutral') return 'Neutral';
   if (!axis) return null;
 
-  const isGuarded = lowerAttitude.includes('guarded') && !lowerAttitude.includes('unguarded');
-  const isUnguarded = lowerAttitude.includes('unguarded');
-  
   const cleanAxis = axis.trim();
-
-  if (isBalanced) return 'Neutral';
-
   if (cleanAxis === 'Fe-Ti') {
-    if (isGuarded) return 'Directive';
-    if (isUnguarded) return 'Adaptive';
+    if (category === 'Guarded') return 'Directive';
+    if (category === 'Unguarded') return 'Adaptive';
   }
   if (cleanAxis === 'Te-Fi') {
-    if (isGuarded) return 'Unseelie';
-    if (isUnguarded) return 'Seelie';
+    if (category === 'Guarded') return 'Unseelie';
+    if (category === 'Unguarded') return 'Seelie';
   }
   return null;
+}
+
+export function checkEmotionalMatch(charAttitude: string, charAxis: string, selectedAttitude: string | null): boolean {
+  if (!selectedAttitude) return true;
+  if (!charAttitude) return false;
+
+  const category = getEmotionalCategory(charAttitude);
+  return category.toLowerCase() === selectedAttitude.toLowerCase();
 }
 
 export function getAllMotifs(): { id: number; label: string; function: string }[] {
