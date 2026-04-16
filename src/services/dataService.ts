@@ -62,8 +62,8 @@ export async function fetchCharacters(): Promise<Character[]> {
               return sVal === 'TRUE' || sVal === '1' || sVal === 'YES';
             });
 
-            const isPublished = String(row[26]).trim().toUpperCase() === 'TRUE';
-            const isWorkArtOpaque = String(row[29]).trim().toUpperCase() === 'TRUE';
+            const isPublished = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[26]).trim().toUpperCase());
+            const isWorkArtOpaque = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[29]).trim().toUpperCase());
 
             return {
               id: `char-${index}`,

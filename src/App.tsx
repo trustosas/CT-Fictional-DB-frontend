@@ -251,7 +251,7 @@ function AppContent() {
   const media = useMemo(() => Array.from(new Set(publishedCharacters.map(c => c.medium))).sort(), [publishedCharacters]);
 
   const works = useMemo(() => {
-    const workMap = new Map<string, { title: string; imageUrl: string; year: string; isOpaque?: boolean }>();
+    const workMap = new Map<string, { title: string; imageUrl: string; year: string; isOpaque: boolean }>();
     publishedCharacters.forEach(char => {
       const existing = workMap.get(char.source);
       if (!existing) {
@@ -259,7 +259,7 @@ function AppContent() {
           title: char.source, 
           imageUrl: char.workImageUrl, 
           year: char.year,
-          isOpaque: char.isWorkArtOpaque
+          isOpaque: !!char.isWorkArtOpaque
         });
       } else if (char.isWorkArtOpaque) {
         existing.isOpaque = true;
@@ -832,7 +832,7 @@ function AppContent() {
 
   const worksInMedium = useMemo(() => {
     if (!activeMedium) return [];
-    const workMap = new Map<string, { title: string; imageUrl: string; year: string; isOpaque?: boolean }>();
+    const workMap = new Map<string, { title: string; imageUrl: string; year: string; isOpaque: boolean }>();
     publishedCharacters
       .filter(c => c.medium === activeMedium)
       .forEach(char => {
@@ -842,7 +842,7 @@ function AppContent() {
             title: char.source, 
             imageUrl: char.workImageUrl, 
             year: char.year,
-            isOpaque: char.isWorkArtOpaque
+            isOpaque: !!char.isWorkArtOpaque
           });
         } else if (char.isWorkArtOpaque) {
           existing.isOpaque = true;
@@ -1749,7 +1749,7 @@ function AppContent() {
                         src={selectedCharacter.workImageUrl} 
                         alt={selectedCharacter.source}
                         className="w-full h-full group-hover:scale-105 transition-transform"
-                        isOpaque={selectedCharacter.isWorkArtOpaque}
+                        isOpaque={currentWorkData?.isOpaque ?? selectedCharacter.isWorkArtOpaque}
                       />
                     </button>
                     <div>
