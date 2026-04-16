@@ -275,7 +275,8 @@ export function getStructuredMotifs(values: boolean[]): FunctionMotifs[] {
         motifs.push({
           category: cat as any,
           label,
-          value: values[currentIndex] || false
+          value: values[currentIndex] || false,
+          index: currentIndex
         });
         currentIndex++;
       });
@@ -344,6 +345,7 @@ export interface Motif {
   category: 'Philosophical' | 'Behavioural' | 'Linguistic';
   label: string;
   value: boolean;
+  index: number;
 }
 
 export interface FunctionMotifs {
@@ -398,8 +400,11 @@ export function getEmotionalDescriptor(attitude: string, axis: string): string |
   const lowerAttitude = attitude.toLowerCase();
   const isGuarded = lowerAttitude.includes('guarded') && !lowerAttitude.includes('unguarded');
   const isUnguarded = lowerAttitude.includes('unguarded');
+  const isBalanced = lowerAttitude.includes('balanced');
   
   const cleanAxis = axis.trim();
+
+  if (isBalanced) return 'Neutral';
 
   if (cleanAxis === 'Fe-Ti') {
     if (isGuarded) return 'Directive';
@@ -410,6 +415,29 @@ export function getEmotionalDescriptor(attitude: string, axis: string): string |
     if (isUnguarded) return 'Seelie';
   }
   return null;
+}
+
+export function getAllMotifs(): { id: number; label: string; function: string }[] {
+  const functions = ['Je', 'Pi', 'Pe', 'Ji', 'Fe', 'Te', 'Ni', 'Si', 'Ti', 'Fi', 'Se', 'Ne'];
+  const all: { id: number; label: string; function: string }[] = [];
+  let currentIndex = 0;
+
+  functions.forEach(func => {
+    const defs = MOTIF_DEFINITIONS[func];
+    ['Philosophical', 'Behavioural', 'Linguistic'].forEach(cat => {
+      const labels = defs[cat];
+      labels.forEach(label => {
+        all.push({
+          id: currentIndex,
+          label,
+          function: func
+        });
+        currentIndex++;
+      });
+    });
+  });
+
+  return all;
 }
 
 export function slugify(text: string): string {
