@@ -396,11 +396,15 @@ export function getSubtypeName(subtype: string): string {
 }
 
 export function getEmotionalDescriptor(attitude: string, axis: string): string | null {
-  if (!attitude || !axis) return null;
+  if (!attitude) return null;
   const lowerAttitude = attitude.toLowerCase();
+  const isBalanced = lowerAttitude.includes('balanced');
+  
+  if (isBalanced) return 'Neutral';
+  if (!axis) return null;
+
   const isGuarded = lowerAttitude.includes('guarded') && !lowerAttitude.includes('unguarded');
   const isUnguarded = lowerAttitude.includes('unguarded');
-  const isBalanced = lowerAttitude.includes('balanced');
   
   const cleanAxis = axis.trim();
 
