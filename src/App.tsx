@@ -196,6 +196,8 @@ function AppContent() {
 
   const [wasOnFeed, setWasOnFeed] = useState(false);
   const [analysisMarkdown, setAnalysisMarkdown] = useState<string>('');
+  const [isFetchingAnalysis, setIsFetchingAnalysis] = useState(false);
+  const [analysisError, setAnalysisError] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [latestCommitSha, setLatestCommitSha] = useState<string | null>(null);
 
@@ -305,11 +307,12 @@ function AppContent() {
     if (!cleanPath) return '### Path Error\n\nNo valid file path detected.';
 
     // Build refs to try in priority order
+    // 1: SHA (pinned version)
+    // 2: main (latest on main)
     const refs = [];
     if (sha) refs.push(sha);
-    refs.push('refs/heads/main');
     refs.push('main');
-    refs.push('refs/heads/master');
+    // master as a last resort fallback
     refs.push('master');
 
     const candidates: string[] = [];
@@ -337,7 +340,7 @@ function AppContent() {
       }
     }
 
-    return `### Analysis Not Found\n\nThe profile analysis for this subject could not be retrieved.\n\n*Verified paths attempted:* \n${uniqueCandidates.slice(0, 3).map(u => `- \`${u}\``).join('\n')}`;
+    return null;
   };
 
   useEffect(() => {
@@ -347,7 +350,11 @@ function AppContent() {
     try {
       if (!isSilent) setIsLoading(true);
       setIsSyncing(true);
-      if (subjectSlug) setAnalysisMarkdown('');
+      if (subjectSlug) {
+        setAnalysisMarkdown('');
+        setAnalysisError(false);
+        setIsFetchingAnalysis(true);
+      }
       
       // Fetch both characters and the latest commit SHA in parallel
       const [data, sha] = await Promise.all([
@@ -366,8 +373,16 @@ function AppContent() {
           const char = data.find(c => slugify(c.name) === subjectSlug);
           if (char && char.analysis) {
             const markdown = await fetchAnalysisMarkdown(char.analysis, sha);
-            setAnalysisMarkdown(markdown);
+            if (markdown) {
+              setAnalysisMarkdown(markdown);
+              setAnalysisError(false);
+            } else {
+              setAnalysisError(true);
+            }
+          } else {
+            setAnalysisError(true);
           }
+          setIsFetchingAnalysis(false);
         }
 
         setRefreshTrigger(prev => prev + 1);
@@ -1711,9 +1726,34 @@ function AppContent() {
                     </div>
 
                     <div>
-                      <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
-                        <Activity className="w-3 h-3" /> Analysis
-                      </h4>
+                      <div className="flex items-center gap-3 mb-4">
+                        <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 flex items-center gap-2">
+                          <Activity className="w-3 h-3" /> Analysis
+                        </h4>
+                        <AnimatePresence>
+                          {isFetchingAnalysis && (
+                            <motion.div 
+                              initial={{ opacity: 0.5, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              className="flex items-center gap-1 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
+                            >
+                              <Loader2 className="w-2 h-2 animate-spin opacity-40" />
+                              <span className="font-mono text-[7px] uppercase tracking-tighter opacity-60">Fetching</span>
+                            </motion.div>
+                          )}
+                          {analysisError && !isFetchingAnalysis && (
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex items-center gap-1 px-2 py-0.5 bg-red-500/5 text-red-500 rounded-full border border-red-500/10"
+                            >
+                              <AlertCircle className="w-2 h-2" />
+                              <span className="font-mono text-[7px] uppercase tracking-tighter">Not Found</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                       <MarkdownAnalysis markdown={analysisMarkdown} />
                       
                       <div className="flex flex-col gap-6 pt-6 border-t border-[#1a1a1a]/10">
