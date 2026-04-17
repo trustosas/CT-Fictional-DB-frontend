@@ -122,24 +122,24 @@ function PaginationControls({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-4 sm:gap-6 mt-12 py-8 border-t border-[#1a1a1a]/5">
+    <div className="flex items-center justify-center gap-2 sm:gap-6 mt-12 py-8 border-t border-[#1a1a1a]/5">
       <button 
         onClick={() => {
           onChange(Math.max(1, current - 1));
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         disabled={current === 1}
-        className="group flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] px-3 sm:px-5 py-2.5 border border-[#1a1a1a]/20 rounded-full disabled:opacity-10 hover:bg-[#1a1a1a] hover:text-[#f5f2ed] transition-all"
+        className="group flex items-center gap-1 sm:gap-2 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] px-2.5 sm:px-5 py-2 sm:py-2.5 border border-[#1a1a1a]/20 rounded-full disabled:opacity-10 hover:bg-[#1a1a1a] hover:text-[#f5f2ed] transition-all"
       >
         <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-        <span className="hidden sm:inline">Previous</span>
+        <span className="hidden xs:inline">Prev</span>
       </button>
       
-      <div className="flex items-center gap-2 sm:gap-3 font-mono text-[10px] uppercase tracking-[0.1em]">
+      <div className="flex items-center gap-1.5 sm:gap-3 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.1em]">
         <span className="opacity-30 hidden xs:inline">Page</span>
         <span className="font-bold">{current}</span>
-        <span className="opacity-30">/</span>
-        <span className="opacity-30">{totalPages}</span>
+        <span className="opacity-30">of</span>
+        <span>{totalPages}</span>
       </div>
 
       <button 
@@ -148,9 +148,9 @@ function PaginationControls({
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         disabled={current === totalPages}
-        className="group flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] px-3 sm:px-5 py-2.5 border border-[#1a1a1a]/20 rounded-full disabled:opacity-10 hover:bg-[#1a1a1a] hover:text-[#f5f2ed] transition-all"
+        className="group flex items-center gap-1 sm:gap-2 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] px-2.5 sm:px-5 py-2 sm:py-2.5 border border-[#1a1a1a]/20 rounded-full disabled:opacity-10 hover:bg-[#1a1a1a] hover:text-[#f5f2ed] transition-all"
       >
-        <span className="hidden sm:inline">Next</span>
+        <span className="hidden xs:inline">Next</span>
         <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
       </button>
     </div>
@@ -191,61 +191,143 @@ function AppContent() {
 
   const fetchLatestCommitSha = async () => {
     const repo = import.meta.env.VITE_ANALYSES_REPO || 'trustosas/CT-in-Fiction-Analyses';
-    try {
-      // Use a standard JSON fetch which is often more reliable in browser environments
-      const res = await fetch(`https://api.github.com/repos/${repo}/commits/main`, {
-        mode: 'cors',
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.sha;
+    const branches = ['main', 'master'];
+    
+    for (const branch of branches) {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${repo}/commits/${branch}`, {
+          mode: 'cors',
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.sha;
+        }
+      } catch (err) {
+        // Silently fail
       }
-    } catch (err) {
-      // Silently fail to avoid console noise if the API is unreachable or blocked
-      // The system will fallback to the randomized cache buster automatically
     }
     return null;
   };
 
   const fetchAnalysisMarkdown = async (content: string, sha?: string | null) => {
     if (!content) return '';
-    const trimmedContent = content.trim();
-    const urlPattern = /^https?:\/\//;
-    let url = '';
+    const trimmed = content.trim();
 
-    if (urlPattern.test(trimmedContent)) {
-      url = trimmedContent;
-      // If it's a GitHub raw URL and we have a SHA, use it for deterministic cache busting
-      if (url.includes('raw.githubusercontent.com') && sha) {
-        url = url.replace('/refs/heads/main/', `/${sha}/`);
-        url = url.replace('/main/', `/${sha}/`);
+    // Helper to extract "owner/repo" from any GitHub URL or string
+    const getRepoParts = (str: string): string => {
+      if (!str) return 'trustosas/CT-in-Fiction-Analyses';
+      if (str.includes('github.com')) {
+        try {
+          const u = new URL(str.startsWith('http') ? str : `https://${str}`);
+          const segments = u.pathname.split('/').filter(Boolean);
+          if (segments.length >= 2) return `${segments[0]}/${segments[1]}`;
+        } catch (e) { /* ignore */ }
+      }
+      // If it's already "owner/repo" or just a string, return as is (but clean it)
+      return str.replace('https://github.com/', '').replace('http://github.com/', '').split('/').slice(0, 2).join('/');
+    };
+    
+    // Helper to extract relative file path from a full GitHub URL
+    const getFilePath = (str: string): string => {
+      if (!str.startsWith('http')) return str;
+      try {
+        const u = new URL(str);
+        const segments = u.pathname.split('/').filter(Boolean);
+        if (segments.length < 3) return '';
+        
+        // Skip user and repo
+        const owner = segments[0];
+        const repoName = segments[1];
+        
+        let startIdx = 2;
+        if (u.hostname === 'github.com') {
+          // /owner/repo/blob/branch/path...
+          if (segments[2] === 'blob' || segments[2] === 'raw' || segments[2] === 'tree') {
+            startIdx = 4;
+          } else {
+            startIdx = 3; // owner/repo/branch/path...
+          }
+        } else if (u.hostname === 'raw.githubusercontent.com') {
+          // /owner/repo/branch/path... or /owner/repo/refs/heads/branch/path...
+          if (segments[2] === 'refs' && segments[3] === 'heads') {
+            startIdx = 5;
+          } else {
+            startIdx = 3;
+          }
+        }
+        return segments.slice(startIdx).join('/');
+      } catch (e) {
+        return str;
+      }
+    };
+
+    const envRepo = import.meta.env.VITE_ANALYSES_REPO;
+    const repoDefault = (envRepo && envRepo.trim().length > 0) ? envRepo.trim() : 'trustosas/CT-in-Fiction-Analyses';
+    
+    let targetRepo = '';
+    let targetFilePath = '';
+
+    if (trimmed.startsWith('http') && trimmed.includes('github.com')) {
+      targetRepo = getRepoParts(trimmed);
+      targetFilePath = getFilePath(trimmed);
+    } else if (trimmed.startsWith('http')) {
+      // Non-GitHub URL: fetch directly
+      try {
+        const res = await fetch(trimmed, { cache: 'no-store' });
+        return res.ok ? await res.text() : `### Fetch Error\n\nHTTP ${res.status} when loading analysis.`;
+      } catch (e) {
+        return `### Connection Error\n\nFailed to reach: \`${trimmed}\``;
       }
     } else {
-      // Handle relative paths by prepending the GitHub raw base URL
-      const repo = import.meta.env.VITE_ANALYSES_REPO || 'trustosas/CT-in-Fiction-Analyses';
-      const base = `https://raw.githubusercontent.com/${repo}`;
-      const path = trimmedContent.split('/').map(segment => encodeURIComponent(segment)).join('/');
-      
-      // If we have a SHA, use it directly. Otherwise use refs/heads/main
-      if (sha) {
-        url = `${base}/${sha}/${path}`;
-      } else {
-        url = `${base}/refs/heads/main/${path}`;
+      // Relative path
+      targetRepo = getRepoParts(repoDefault);
+      targetFilePath = trimmed;
+    }
+
+    // Clean and encode the path
+    const cleanPath = targetFilePath
+      .split('/')
+      .filter(s => s)
+      .map(segment => encodeURIComponent(decodeURIComponent(segment)))
+      .join('/');
+
+    if (!cleanPath) return '### Path Error\n\nNo valid file path detected.';
+
+    // Build refs to try in priority order
+    const refs = [];
+    if (sha) refs.push(sha);
+    refs.push('refs/heads/main');
+    refs.push('main');
+    refs.push('refs/heads/master');
+    refs.push('master');
+
+    const candidates: string[] = [];
+    refs.forEach(ref => {
+      const u = `https://raw.githubusercontent.com/${targetRepo}/${ref}/${cleanPath}`;
+      candidates.push(u);
+      if (!u.toLowerCase().endsWith('.md')) {
+        candidates.push(u + '.md');
+      }
+    });
+
+    const uniqueCandidates = Array.from(new Set(candidates));
+
+    const tryFetch = async (url: string) => {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`${res.status}`);
+      return await res.text();
+    };
+
+    for (const url of uniqueCandidates) {
+      try {
+        return await tryFetch(url);
+      } catch (err) {
+        // next
       }
     }
 
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => '');
-        throw new Error(`HTTP error! status: ${res.status}${errorText ? ` - ${errorText.substring(0, 100)}` : ''}`);
-      }
-      return await res.text();
-    } catch (err) {
-      console.error('Failed to fetch analysis:', err);
-      return `Failed to load analysis from: ${url}\n\nError: ${err instanceof Error ? err.message : String(err)}`;
-    }
+    return `### Analysis Not Found\n\nThe profile analysis for this subject could not be retrieved.\n\n*Verified paths attempted:* \n${uniqueCandidates.slice(0, 3).map(u => `- \`${u}\``).join('\n')}`;
   };
 
   useEffect(() => {
@@ -1115,7 +1197,7 @@ function AppContent() {
                   </div>
                 )}
                 <div>
-                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-2">
+                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-2 break-words max-w-full">
                     {activeWork}
                   </h1>
                   <p className="font-mono text-xs uppercase tracking-widest opacity-50">
@@ -1158,7 +1240,7 @@ function AppContent() {
                     exit={{ height: 0, opacity: 0 }}
                     className="z-50"
                   >
-                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-x-4 gap-y-6 pt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-6 pt-4">
                       <CustomSelect 
                         label="Quadra"
                         value={selectedQuadra}
@@ -1298,12 +1380,12 @@ function AppContent() {
               <div className="max-w-md mx-auto">
                 <AlertCircle className="w-12 h-12 mx-auto mb-6 opacity-20" />
                 <h2 className="font-serif text-3xl mb-4">
-                  {publishedCharacters.length === 0 ? 'No published subjects' : 'Subject not found in database'}
+                  {publishedCharacters.length === 0 ? 'Database Empty' : 'No Matches'}
                 </h2>
                 <p className="text-sm opacity-50 leading-relaxed">
                   {publishedCharacters.length === 0 
-                    ? 'The database was loaded but no subjects are currently marked as published.'
-                    : 'No subjects match your current search or filter criteria in the database.'}
+                    ? 'No subjects have been recorded in the database yet.'
+                    : 'Try adjusting your search or filters to see more results.'}
                 </p>
               </div>
             </div>
@@ -1346,12 +1428,14 @@ function AppContent() {
                       {char.finalDevelopment || char.initialDevelopment}
                     </span>
                     <span className="font-mono text-[10px] opacity-40 tracking-tighter">
-                      {[
-                        char.subtype?.trim(), 
-                        (char.emotionalAttitude && char.judgmentAxis) 
-                          ? (getEmotionalDescriptor(char.emotionalAttitude, char.judgmentAxis) || char.emotionalAttitude) 
-                          : char.emotionalAttitude?.trim()
-                      ].filter(s => s && s.length > 0).join(' • ')}
+                      {(() => {
+                        const effectiveJAxis = char.judgmentAxis || deriveAxesFromQuadra(char.rawQuadra || char.quadra).judgment;
+                        const descriptor = char.emotionalAttitude ? (getEmotionalDescriptor(char.emotionalAttitude, effectiveJAxis) || char.emotionalAttitude) : '';
+                        return [
+                          char.subtype?.trim(), 
+                          descriptor
+                        ].filter(s => s && s.length > 0).join(' • ');
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -1496,10 +1580,10 @@ function AppContent() {
                   {selectedCharacter.emotionalAttitude && (
                     <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
                       <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Emotional Attitude</p>
-                      {getEmotionalDescriptor(selectedCharacter.emotionalAttitude, selectedCharacter.judgmentAxis) ? (
+                      {getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) ? (
                         <>
                           <p className="font-serif italic text-xl leading-none mb-1">
-                            {getEmotionalDescriptor(selectedCharacter.emotionalAttitude, selectedCharacter.judgmentAxis)}
+                            {getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment)}
                           </p>
                           <p className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">
                             {selectedCharacter.emotionalAttitude === 'Balanced' ? 'Balanced' : selectedCharacter.emotionalAttitude}
