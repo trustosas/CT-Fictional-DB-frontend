@@ -1297,9 +1297,13 @@ function AppContent() {
             <div className="col-span-full py-32 text-center">
               <div className="max-w-md mx-auto">
                 <AlertCircle className="w-12 h-12 mx-auto mb-6 opacity-20" />
-                <h2 className="font-serif text-3xl mb-4">Subject not found in database</h2>
+                <h2 className="font-serif text-3xl mb-4">
+                  {publishedCharacters.length === 0 ? 'No published subjects' : 'Subject not found in database'}
+                </h2>
                 <p className="text-sm opacity-50 leading-relaxed">
-                  No subjects match your current search or filter criteria in the database.
+                  {publishedCharacters.length === 0 
+                    ? 'The database was loaded but no subjects are currently marked as published.'
+                    : 'No subjects match your current search or filter criteria in the database.'}
                 </p>
               </div>
             </div>
