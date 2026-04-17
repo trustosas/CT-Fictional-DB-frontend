@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
 import { CHARACTERS as STATIC_CHARACTERS, type Character } from './data';
-import { slugify, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay, deriveQuadra, normalizeFunctionCode, ENERGETIC_NAMES, FUNCTION_NAMES, FUNCTION_ORDER, getEmotionalDescriptor, getEmotionalCategory, checkEmotionalMatch, getAllMotifs, matchesFilters, type FilterState } from './lib/ct-logic';
+import { slugify, getStructuredMotifs, getDevelopmentName, getSubtypeName, formatTypeDisplay, deriveQuadra, deriveAxesFromQuadra, normalizeFunctionCode, ENERGETIC_NAMES, FUNCTION_NAMES, FUNCTION_ORDER, getEmotionalDescriptor, getEmotionalCategory, checkEmotionalMatch, getAllMotifs, matchesFilters, type FilterState } from './lib/ct-logic';
 import { fetchCharacters } from './services/dataService';
 
 type View = 'medium' | 'work' | 'feed';
@@ -505,7 +505,7 @@ function AppContent() {
     const filtered = viewFilteredCharacters.filter(c => 
       matchesFilters(c, { ...currentFilters, judgmentAxis: null })
     );
-    const items = filtered.map(c => c.judgmentAxis).filter(Boolean);
+    const items = filtered.map(c => c.judgmentAxis || deriveAxesFromQuadra(c.rawQuadra || c.quadra).judgment).filter(Boolean);
     return Array.from(new Set(items as string[])).filter(i => i.toLowerCase() !== 'all').sort();
   }, [viewFilteredCharacters, currentFilters]);
 
@@ -521,7 +521,7 @@ function AppContent() {
     const filtered = viewFilteredCharacters.filter(c => 
       matchesFilters(c, { ...currentFilters, perceptionAxis: null })
     );
-    const items = filtered.map(c => c.perceptionAxis).filter(Boolean);
+    const items = filtered.map(c => c.perceptionAxis || deriveAxesFromQuadra(c.rawQuadra || c.quadra).perception).filter(Boolean);
     return Array.from(new Set(items as string[])).filter(i => i.toLowerCase() !== 'all').sort();
   }, [viewFilteredCharacters, currentFilters]);
 
@@ -1378,6 +1378,7 @@ function AppContent() {
       {/* Modal / Detail View */}
       <AnimatePresence>
         {selectedCharacter && (() => {
+          const derivedAxes = deriveAxesFromQuadra(selectedCharacter.rawQuadra || selectedCharacter.quadra);
           const ct = {
             functions: {
               lead: selectedCharacter.leadFunction,
@@ -1392,10 +1393,10 @@ function AppContent() {
               polar: selectedCharacter.polarEnergetic
             },
             axes: {
-              judgment: selectedCharacter.judgmentAxis,
-              perception: selectedCharacter.perceptionAxis
+              judgment: selectedCharacter.judgmentAxis || derivedAxes.judgment,
+              perception: selectedCharacter.perceptionAxis || derivedAxes.perception
             },
-            quadra: deriveQuadra(selectedCharacter.judgmentAxis, selectedCharacter.perceptionAxis) || selectedCharacter.quadra
+            quadra: deriveQuadra(selectedCharacter.judgmentAxis, selectedCharacter.perceptionAxis) || selectedCharacter.rawQuadra || selectedCharacter.quadra
           };
           return (
             <>

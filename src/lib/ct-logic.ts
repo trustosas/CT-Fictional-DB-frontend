@@ -471,14 +471,18 @@ export interface FilterState {
 }
 
 export function matchesFilters(char: any, filters: Partial<FilterState>): boolean {
+  const derived = deriveAxesFromQuadra(char.rawQuadra || char.quadra);
+  const judgment = (char.judgmentAxis || derived.judgment).toLowerCase();
+  const perception = (char.perceptionAxis || derived.perception).toLowerCase();
+
   if (filters.quadra) {
     const quadra = char.quadra?.toLowerCase();
     const rawQuadra = char.rawQuadra?.toLowerCase();
     const filterQuadra = filters.quadra.toLowerCase();
     if (quadra !== filterQuadra && rawQuadra !== filterQuadra) return false;
   }
-  if (filters.judgmentAxis && char.judgmentAxis.toLowerCase() !== filters.judgmentAxis.toLowerCase()) return false;
-  if (filters.perceptionAxis && char.perceptionAxis.toLowerCase() !== filters.perceptionAxis.toLowerCase()) return false;
+  if (filters.judgmentAxis && judgment !== filters.judgmentAxis.toLowerCase()) return false;
+  if (filters.perceptionAxis && perception !== filters.perceptionAxis.toLowerCase()) return false;
   if (filters.leadEnergetic && char.leadEnergetic.toLowerCase() !== filters.leadEnergetic.toLowerCase()) return false;
   if (filters.auxEnergetic && char.auxiliaryEnergetic.toLowerCase() !== filters.auxEnergetic.toLowerCase()) return false;
   
@@ -510,6 +514,15 @@ export function deriveQuadra(judgmentAxis: string, perceptionAxis: string): stri
     if (p === 'Ne-Si') return 'Delta';
   }
   return '';
+}
+
+export function deriveAxesFromQuadra(quadra: string): { judgment: string; perception: string } {
+  const q = quadra?.trim().toLowerCase();
+  if (q === 'alpha') return { judgment: 'Fe-Ti', perception: 'Ne-Si' };
+  if (q === 'beta') return { judgment: 'Fe-Ti', perception: 'Se-Ni' };
+  if (q === 'gamma') return { judgment: 'Te-Fi', perception: 'Se-Ni' };
+  if (q === 'delta') return { judgment: 'Te-Fi', perception: 'Ne-Si' };
+  return { judgment: '', perception: '' };
 }
 
 export function slugify(text: string): string {
