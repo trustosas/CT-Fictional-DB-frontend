@@ -190,9 +190,10 @@ function AppContent() {
   const [latestCommitSha, setLatestCommitSha] = useState<string | null>(null);
 
   const fetchLatestCommitSha = async () => {
+    const repo = import.meta.env.VITE_ANALYSES_REPO || 'trustosas/CT-in-Fiction-Analyses';
     try {
       // Use a standard JSON fetch which is often more reliable in browser environments
-      const res = await fetch('https://api.github.com/repos/trustosas/CT-in-Fiction-Analyses/commits/main', {
+      const res = await fetch(`https://api.github.com/repos/${repo}/commits/main`, {
         mode: 'cors',
         cache: 'no-store'
       });
@@ -222,7 +223,8 @@ function AppContent() {
       }
     } else {
       // Handle relative paths by prepending the GitHub raw base URL
-      const base = 'https://raw.githubusercontent.com/trustosas/CT-in-Fiction-Analyses';
+      const repo = import.meta.env.VITE_ANALYSES_REPO || 'trustosas/CT-in-Fiction-Analyses';
+      const base = `https://raw.githubusercontent.com/${repo}`;
       const path = trimmedContent.split('/').map(segment => encodeURIComponent(segment)).join('/');
       
       // If we have a SHA, use it directly. Otherwise use refs/heads/main
