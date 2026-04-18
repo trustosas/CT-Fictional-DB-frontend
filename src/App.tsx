@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
-import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check } from 'lucide-react';
+import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check, User, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatDistanceToNow } from 'date-fns';
@@ -100,6 +100,14 @@ export default function App() {
 
 function SmartWorkImage({ src, alt, className, isOpaque }: { src: string, alt: string, className?: string, isOpaque?: boolean }) {
   const [orientation, setOrientation] = useState<'landscape' | 'portrait' | null>(null);
+
+  if (!src) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-[#1a1a1a]/5 opacity-20`}>
+        <FileText className="w-12 h-12" />
+      </div>
+    );
+  }
 
   return (
     <img 
@@ -1543,13 +1551,17 @@ function AppContent() {
                 className="character-card group cursor-pointer"
                 onClick={() => handleSelectCharacter(char)}
               >
-                <div className="character-image-container aspect-[16/9]">
-                  <img 
-                    src={char.imageUrl} 
-                    alt={char.name}
-                    referrerPolicy="no-referrer"
-                    className="character-image object-cover group-hover:scale-105"
-                  />
+                <div className="character-image-container aspect-[16/9] flex items-center justify-center bg-[#1a1a1a]/5">
+                  {char.imageUrl ? (
+                    <img 
+                      src={char.imageUrl} 
+                      alt={char.name}
+                      referrerPolicy="no-referrer"
+                      className="character-image object-cover group-hover:scale-105"
+                    />
+                  ) : (
+                    <User className="w-16 h-16 opacity-10" />
+                  )}
                 </div>
                 <div className="flex justify-between items-start mb-2 gap-4">
                   <div className="min-w-0">
@@ -1678,16 +1690,25 @@ function AppContent() {
                   </div>
                 </div>
 
-                <div className="aspect-[16/9] rounded-sm overflow-hidden mb-12 relative group bg-[#1a1a1a]/5">
-                  <img 
-                    src={selectedCharacter.imageUrl} 
-                    alt={selectedCharacter.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                     <p className="text-white font-mono text-[10px] uppercase tracking-widest">Subject Visual Reference</p>
-                  </div>
+                <div className="aspect-[16/9] rounded-sm overflow-hidden mb-12 relative group bg-[#1a1a1a]/5 flex items-center justify-center">
+                  {selectedCharacter.imageUrl ? (
+                    <>
+                      <img 
+                        src={selectedCharacter.imageUrl} 
+                        alt={selectedCharacter.name}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                        <p className="text-white font-mono text-[10px] uppercase tracking-widest">Subject Visual Reference</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-4">
+                      <User className="w-24 h-24 opacity-10" />
+                      <p className="font-mono text-[8px] uppercase tracking-[0.3em] opacity-30">No Portrait Available</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Core Profile Data */}
