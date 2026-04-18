@@ -181,7 +181,7 @@ function AppContent() {
   const ITEMS_PER_PAGE = 10;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [workSortOrder, setWorkSortOrder] = useState<'default' | 'az' | 'year' | 'subjects'>('default');
+  const [workSortOrder, setWorkSortOrder] = useState<'az' | 'year' | 'subjects'>('az');
   const [selectedQuadra, setSelectedQuadra] = useState<string | null>(null);
   const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(null);
   const [selectedJudgmentAxis, setSelectedJudgmentAxis] = useState<string | null>(null);
@@ -199,6 +199,7 @@ function AppContent() {
   const bubbleRef = useRef<HTMLDivElement>(null);
 
   const [wasOnFeed, setWasOnFeed] = useState(false);
+  const [accessedViaAll, setAccessedViaAll] = useState(false);
   const [analysisMarkdown, setAnalysisMarkdown] = useState<string>('');
   const [isFetchingAnalysis, setIsFetchingAnalysis] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'notFound' | 'empty' | 'available'>('idle');
@@ -483,24 +484,34 @@ function AppContent() {
   const navigateToWork = (workTitle: string) => {
     const char = publishedCharacters.find(c => c.source === workTitle);
     if (char) {
+      if (currentView === 'all-works') {
+        setAccessedViaAll(true);
+      } else if (currentView === 'feed') {
+        setAccessedViaAll(false);
+      }
       navigate(`/${slugify(char.medium)}/${slugify(workTitle)}`);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToMedium = (mediumName: string) => {
+    if (currentView !== 'all-works' && currentView !== 'medium' && currentView !== 'work') {
+      setAccessedViaAll(false);
+    }
     navigate(`/${slugify(mediumName)}`);
     setIsMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToHome = () => {
+    setAccessedViaAll(false);
     navigate('/');
     setIsMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToAllWorks = () => {
+    setAccessedViaAll(false);
     navigate('/all-works');
     setIsMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -508,6 +519,11 @@ function AppContent() {
 
   const handleSelectCharacter = (char: Character | null) => {
     if (char) {
+      if (currentView === 'all-works') {
+        setAccessedViaAll(true);
+      } else if (currentView === 'feed') {
+        setAccessedViaAll(false);
+      }
       setWasOnFeed(!mediumSlug && !workSlug);
       navigate(`/${slugify(char.medium)}/${slugify(char.source)}/${slugify(char.name)}`);
     } else {
@@ -521,6 +537,7 @@ function AppContent() {
         navigate('/');
       }
       setWasOnFeed(false);
+      setAccessedViaAll(false);
     }
   };
 
@@ -1021,14 +1038,13 @@ function AppContent() {
 
     // Apply Sorting
     const sorted = [...list].sort((a, b) => {
-      if (workSortOrder === 'az') return a.title.localeCompare(b.title);
       if (workSortOrder === 'year') return b.year.localeCompare(a.year);
       if (workSortOrder === 'subjects') {
         const countA = publishedCharacters.filter(c => c.source === a.title).length;
         const countB = publishedCharacters.filter(c => c.source === b.title).length;
         return countB - countA;
       }
-      return 0; // Default order
+      return a.title.localeCompare(b.title); // Default to A-Z
     });
 
     return sorted;
@@ -1123,21 +1139,21 @@ function AppContent() {
                   Home
                 </button>
                 
-                <button 
-                  onClick={navigateToAllWorks}
-                  className="block font-serif text-2xl hover:italic transition-all text-left w-full font-extralight tracking-tight opacity-70"
-                >
-                  All
-                </button>
-                
                 <div className="pt-6 border-t border-white/10">
                   <span className="font-mono text-[9px] uppercase tracking-[0.3em] opacity-40 mb-4 block">{pluralize(media.length, 'Medium', 'Media')}</span>
                   <div className="space-y-2">
+                    <button 
+                      onClick={navigateToAllWorks}
+                      className={`block font-serif text-lg hover:italic transition-all text-left w-full ${currentView === 'all-works' ? 'opacity-100 italic' : 'font-extralight opacity-50'} hover:opacity-100 py-0.5`}
+                    >
+                      All
+                    </button>
                     {media.map(m => (
                       <button 
                         key={m}
                         onClick={() => navigateToMedium(m)}
-                        className="block font-serif text-lg hover:italic transition-all text-left w-full opacity-60 hover:opacity-100 py-0.5"
+                        className={`block font-serif text-lg hover:italic transition-all text-left w-full truncate ${activeMedium === m ? 'opacity-100 italic' : 'opacity-60'} hover:opacity-100 py-0.5`}
+                        title={m}
                       >
                         {m}
                       </button>
@@ -1163,25 +1179,34 @@ function AppContent() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <button 
-            onClick={navigateToHome}
-            className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'feed' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
-          >
-            Home
-          </button>
           
-          <button 
-            onClick={navigateToAllWorks}
-            className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'all-works' ? 'opacity-100 font-medium' : 'opacity-30 hover:opacity-80 font-extralight'}`}
-          >
-            All
-          </button>
+          {currentView === 'feed' && (
+            <button 
+              onClick={navigateToHome}
+              className="font-mono text-[10px] uppercase tracking-widest opacity-100 font-bold"
+            >
+              Home
+            </button>
+          )}
+
+          {(currentView === 'all-works' || (accessedViaAll && (activeMedium || activeWork))) && (
+            <>
+              <button 
+                onClick={navigateToAllWorks}
+                className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'all-works' ? 'opacity-100 font-medium' : 'opacity-30 hover:opacity-80 font-extralight'}`}
+              >
+                All
+              </button>
+            </>
+          )}
+
           {activeMedium && (
             <>
-              <span className="opacity-20">/</span>
+              {(currentView === 'all-works' || accessedViaAll) && <span className="opacity-20 translate-y-[-1px]">/</span>}
               <button 
                 onClick={() => navigateToMedium(activeMedium)}
-                className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${currentView === 'medium' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
+                className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap truncate max-w-[100px] sm:max-w-[200px] ${currentView === 'medium' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
+                title={activeMedium}
               >
                 {activeMedium}
               </button>
@@ -1189,9 +1214,10 @@ function AppContent() {
           )}
           {activeWork && (
             <>
-              <span className="opacity-20">/</span>
+              <span className="opacity-20 translate-y-[-1px]">/</span>
               <button 
-                className="font-mono text-[10px] uppercase tracking-widest opacity-100 font-bold whitespace-nowrap"
+                className="font-mono text-[10px] uppercase tracking-widest opacity-100 font-bold whitespace-nowrap truncate max-w-[120px] sm:max-w-[300px]"
+                title={activeWork}
               >
                 {activeWork}
               </button>
@@ -1244,8 +1270,8 @@ function AppContent() {
               </>
             ) : currentView === 'all-works' ? (
               <>
-                <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-3 uppercase">
-                  All <span className="italic">Media</span>
+                <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-3">
+                  All Media
                 </h1>
                 <p className="text-base opacity-70 leading-relaxed">
                   Exploring all {works.length} indexed {pluralize(works.length, 'work')} across all media types.
@@ -1276,7 +1302,7 @@ function AppContent() {
                   </div>
                 )}
                 <div>
-                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-2 break-words max-w-full">
+                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-2 truncate max-w-full">
                     {activeWork}
                   </h1>
                   <p className="font-mono text-xs uppercase tracking-widest opacity-50">
@@ -1288,40 +1314,37 @@ function AppContent() {
           </div>
           
           {currentView === 'all-works' ? (
-            <div className="flex flex-col gap-4 w-full md:w-auto">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
-                  <input 
-                    type="text"
-                    placeholder="Search works..."
-                    className="bg-transparent border-b border-[#1a1a1a]/20 py-2 pl-10 pr-4 focus:outline-none focus:border-[#1a1a1a] transition-colors w-full md:w-80"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-30 hidden xs:block whitespace-nowrap">Sort By</span>
-                  <div className="flex items-center gap-2">
-                    {[
-                      { label: 'Default', value: 'default' },
-                      { label: 'A-Z', value: 'az' },
-                      { label: 'Year', value: 'year' },
-                      { label: 'Scale', value: 'subjects' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setWorkSortOrder(opt.value as any)}
-                        className={`px-3 py-1.5 rounded-full border font-mono text-[9px] uppercase tracking-widest transition-all ${
-                          workSortOrder === opt.value 
-                            ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]' 
-                            : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30 opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+            <div className="flex flex-col gap-4 w-full">
+              <div className="relative w-full max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
+                <input 
+                  type="text"
+                  placeholder="Search works..."
+                  className="bg-transparent border-b border-[#1a1a1a]/20 py-3 pl-10 pr-4 focus:outline-none focus:border-[#1a1a1a] transition-colors w-full text-lg"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[9px] uppercase tracking-widest opacity-30 whitespace-nowrap">Sort By</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { label: 'A-Z', value: 'az' },
+                    { label: 'Year', value: 'year' },
+                    { label: 'Scale', value: 'subjects' }
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setWorkSortOrder(opt.value as any)}
+                      className={`px-4 py-2 rounded-full border font-mono text-[9px] uppercase tracking-widest transition-all ${
+                        workSortOrder === opt.value 
+                          ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]' 
+                          : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
