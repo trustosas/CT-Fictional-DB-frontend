@@ -1564,16 +1564,18 @@ function AppContent() {
                   )}
                 </div>
                 <div className="flex justify-between items-start mb-2 gap-4">
-                  <div className="min-w-0">
-                    <h3 className="font-serif text-2xl group-hover:italic transition-all truncate leading-tight mb-1">{char.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-serif text-2xl group-hover:italic transition-all truncate leading-tight mb-1" title={char.name}>{char.name}</h3>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         navigateToWork(char.source);
                       }}
-                      className="font-mono text-[11px] uppercase tracking-widest opacity-50 hover:opacity-100 hover:underline transition-all block truncate"
+                      className="font-mono text-[11px] uppercase tracking-widest opacity-50 hover:opacity-100 hover:underline transition-all flex items-center gap-1.5 w-full min-w-0"
+                      title={`${char.source} (${char.year})`}
                     >
-                      {char.source} ({char.year})
+                      <span className="truncate">{char.source}</span>
+                      <span className="flex-shrink-0">({char.year})</span>
                     </button>
                   </div>
                   <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
@@ -1673,15 +1675,17 @@ function AppContent() {
                   <h2 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words">
                     {selectedCharacter.name}
                   </h2>
-                  <div className="flex gap-4 items-center">
+                  <div className="flex gap-4 items-center min-w-0">
                     <button 
                       onClick={() => navigateToWork(selectedCharacter.source)}
-                      className="font-serif italic text-xl opacity-60 hover:opacity-100 hover:underline transition-all text-left"
+                      className="font-serif italic text-xl opacity-60 hover:opacity-100 hover:underline transition-all text-left flex items-center gap-2 min-w-0"
+                      title={`${selectedCharacter.source} (${selectedCharacter.year})`}
                     >
-                      {selectedCharacter.source} ({selectedCharacter.year})
+                      <span className="truncate">{selectedCharacter.source}</span>
+                      <span className="flex-shrink-0">({selectedCharacter.year})</span>
                     </button>
-                    <div className="h-px flex-1 bg-[#1a1a1a]/10" />
-                    <div className="flex flex-col items-end gap-0.5">
+                    <div className="h-px flex-1 bg-[#1a1a1a]/10 hidden sm:block" />
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                       <span className="font-mono text-sm font-bold mb-1">{formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)}</span>
                       <span className={`font-sans text-lg font-bold tracking-[0.2em] leading-none whitespace-nowrap ${!selectedCharacter.finalDevelopment ? 'opacity-40' : ''}`}>
                         {selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}
