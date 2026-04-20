@@ -189,8 +189,20 @@ function AppContent() {
   const ITEMS_PER_PAGE = 10;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [workSortOrder, setWorkSortOrder] = useState<'az' | 'year' | 'subjects' | 'published' | 'edited'>('published');
-  const [subjectSortOrder, setSubjectSortOrder] = useState<'published' | 'edited'>('published');
+  const [workSortOrder, setWorkSortOrder] = useState<'az' | 'year' | 'subjects' | 'published' | 'edited'>(() => {
+    return (localStorage.getItem('workSortOrder') as any) || 'published';
+  });
+  const [subjectSortOrder, setSubjectSortOrder] = useState<'published' | 'edited'>(() => {
+    return (localStorage.getItem('subjectSortOrder') as any) || 'published';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('workSortOrder', workSortOrder);
+  }, [workSortOrder]);
+
+  useEffect(() => {
+    localStorage.setItem('subjectSortOrder', subjectSortOrder);
+  }, [subjectSortOrder]);
   const [selectedQuadra, setSelectedQuadra] = useState<string | null>(null);
   const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(null);
   const [selectedJudgmentAxis, setSelectedJudgmentAxis] = useState<string | null>(null);
