@@ -1245,7 +1245,7 @@ function AppContent() {
               {(currentView === 'all-works' || accessedViaAll) && <span className="opacity-20 translate-y-[-1px]">/</span>}
               <button 
                 onClick={() => navigateToMedium(activeMedium)}
-                className={`font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap truncate max-w-[100px] sm:max-w-[200px] ${currentView === 'medium' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
+                className={`font-mono text-[10px] uppercase tracking-widest transition-all truncate max-w-[150px] sm:max-w-[300px] ${currentView === 'medium' ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-100'}`}
                 title={activeMedium}
               >
                 {activeMedium}
@@ -1256,7 +1256,7 @@ function AppContent() {
             <>
               <span className="opacity-20 translate-y-[-1px]">/</span>
               <button 
-                className="font-mono text-[10px] uppercase tracking-widest opacity-100 font-bold whitespace-nowrap truncate max-w-[120px] sm:max-w-[300px]"
+                className="font-mono text-[10px] uppercase tracking-widest opacity-100 font-bold truncate max-w-[150px] xs:max-w-[200px] sm:max-w-[400px]"
                 title={activeWork}
               >
                 {activeWork}
@@ -1319,7 +1319,7 @@ function AppContent() {
               </>
             ) : currentView === 'medium' ? (
               <>
-                <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-3 uppercase truncate">
+                <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-[1.1] tracking-tight mb-3 uppercase">
                   {activeMedium}
                 </h1>
                 <p className="text-base opacity-70 leading-relaxed">
@@ -1342,7 +1342,7 @@ function AppContent() {
                   </div>
                 )}
                 <div>
-                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-none tracking-tight mb-2 truncate max-w-full">
+                  <h1 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-[1.1] tracking-tight mb-2">
                     {activeWork}
                   </h1>
                   <p className="font-mono text-xs uppercase tracking-widest opacity-50">
