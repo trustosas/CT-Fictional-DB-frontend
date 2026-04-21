@@ -1795,10 +1795,26 @@ function AppContent() {
                         `-# Shared from [CT in Fiction](${baseOriginUrl})`
                       ].filter(item => typeof item === 'string').join('\n');
                       
-                      navigator.clipboard.writeText(shareText).then(() => {
-                        setCopyStatus('discord');
-                        setTimeout(() => setCopyStatus(null), 2000);
-                      });
+                      const performCopy = async () => {
+                        try {
+                          // Step 1: Copy image URL if it exists
+                          if (selectedCharacter.imageUrl) {
+                            await navigator.clipboard.writeText(selectedCharacter.imageUrl);
+                            // Brief delay to ensure clipboard history picks it up as a separate entry
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                          }
+                          
+                          // Step 2: Copy the Discord export text
+                          await navigator.clipboard.writeText(shareText);
+                          
+                          setCopyStatus('discord');
+                          setTimeout(() => setCopyStatus(null), 2000);
+                        } catch (err) {
+                          console.error('Failed to copy to clipboard:', err);
+                        }
+                      };
+
+                      performCopy();
                     }}
                     className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words cursor-pointer hover:opacity-80 transition-opacity active:scale-[0.98] select-none"
                   >
