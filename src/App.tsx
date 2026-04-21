@@ -1792,7 +1792,7 @@ function AppContent() {
                         selectedCharacter.notes && "### Analyst Notes",
                         selectedCharacter.notes && selectedCharacter.notes.split('\n').map(line => `> ${line}`).join('\n'),
                         "",
-                        `-# Shared from CT in Fiction | ${baseOriginUrl}`
+                        `-# Shared from [CT in Fiction](${baseOriginUrl})`
                       ].filter(item => typeof item === 'string').join('\n');
                       
                       navigator.clipboard.writeText(shareText).then(() => {
