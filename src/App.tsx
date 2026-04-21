@@ -77,8 +77,8 @@ const pluralize = (count: number, singular: string, plural?: string) => {
 
 function MarkdownAnalysis({ markdown }: { markdown: string }) {
   return (
-    <div className="mb-8 relative group">
-      <div className="prose prose-sm max-w-none prose-neutral opacity-90 leading-relaxed font-serif text-lg">
+    <div className="relative group">
+      <div className="prose prose-sm max-w-none prose-neutral opacity-90 leading-relaxed font-serif text-lg prose-p:last:mb-0">
         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
           {markdown}
         </ReactMarkdown>
@@ -414,6 +414,7 @@ function AppContent() {
             setAnalysisStatus('notFound');
           }
           setIsFetchingAnalysis(false);
+          setExpandedSections(prev => new Set(prev).add('analysis'));
         }
 
         setRefreshTrigger(prev => prev + 1);
@@ -596,7 +597,7 @@ function AppContent() {
     };
   }, [activeMotifId]);
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['analysis']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -1834,7 +1835,7 @@ function AppContent() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                   <div className="space-y-6">
                     <div className="border-b border-[#1a1a1a]/5 pb-4">
                       <button 
@@ -1935,8 +1936,7 @@ function AppContent() {
                 </div>
 
                 {/* Analysis Section (Full-width) */}
-                <div className="border-b border-[#1a1a1a]/5 pb-8 mb-16">
-                  <div className="border-t border-[#1a1a1a]/10 pt-8 mt-12">
+                <div className="border-t border-[#1a1a1a]/10 pt-4 mt-4">
                     <button 
                       onClick={() => toggleSection('analysis')}
                       className="w-full flex items-center justify-between group py-2"
@@ -1945,53 +1945,28 @@ function AppContent() {
                         <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-40 flex items-center gap-2 group-hover:opacity-100 transition-opacity">
                           <Activity className="w-3 h-3" /> Analysis
                         </h4>
-                        <AnimatePresence>
-                          {isFetchingAnalysis && (
-                            <motion.div 
-                              initial={{ opacity: 0.5, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              className="flex items-center gap-1.5 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
+                        <AnimatePresence mode="wait">
+                          {isFetchingAnalysis ? (
+                            <motion.span 
+                              key="fetching"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 0.4 }}
+                              exit={{ opacity: 0 }}
+                              className="font-mono text-[9px] uppercase tracking-widest italic"
                             >
-                              <Loader2 className="w-2 h-2 animate-spin opacity-40" />
-                              <span className="font-mono text-[7px] uppercase tracking-tighter opacity-60">Fetching</span>
-                            </motion.div>
-                          )}
-                          {analysisStatus === 'notFound' && !isFetchingAnalysis && (
-                            <motion.div 
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 bg-red-500/5 text-red-500 rounded-full border border-red-500/10"
+                              Fetching...
+                            </motion.span>
+                          ) : !expandedSections.has('analysis') ? (
+                            <motion.span 
+                              key="status"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 0.4 }}
+                              className="font-mono text-[9px] uppercase tracking-widest italic"
                             >
-                              <AlertCircle className="w-2 h-2" />
-                              <span className="font-mono text-[7px] uppercase tracking-tighter">Not Found</span>
-                            </motion.div>
-                          )}
-                          {analysisStatus === 'empty' && !isFetchingAnalysis && (
-                            <motion.div 
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="flex items-center gap-1 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
-                            >
-                              <Info className="w-2 h-2 opacity-40" />
-                              <span className="font-mono text-[7px] uppercase tracking-tighter opacity-60">Empty</span>
-                            </motion.div>
-                          )}
+                              {analysisStatus === 'empty' ? 'Analysis Pending' : analysisStatus === 'notFound' ? 'Entry Missing' : ''}
+                            </motion.span>
+                          ) : null}
                         </AnimatePresence>
-                        {!expandedSections.has('analysis') && !isFetchingAnalysis && (
-                          <div className="hidden sm:block flex-1 text-right pr-6">
-                            {analysisStatus === 'empty' && (
-                              <span className="font-mono text-[9px] uppercase tracking-tighter opacity-40 italic">
-                                Analysis Pending
-                              </span>
-                            )}
-                            {analysisStatus === 'notFound' && (
-                              <span className="font-mono text-[9px] uppercase tracking-tighter opacity-40 italic">
-                                Entry Missing
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
                       <ChevronDown className={`w-4 h-4 opacity-20 group-hover:opacity-100 transition-all ${expandedSections.has('analysis') ? 'rotate-180' : ''}`} />
                     </button>
@@ -2004,7 +1979,7 @@ function AppContent() {
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="pt-8 pb-4">
+                          <div className="pt-4">
                             {analysisStatus === 'available' ? (
                               <MarkdownAnalysis markdown={analysisMarkdown} />
                             ) : !isFetchingAnalysis ? (
@@ -2025,7 +2000,7 @@ function AppContent() {
                     </AnimatePresence>
 
                     {/* Metadata Footer */}
-                    <div className="flex flex-col sm:flex-row gap-8 pt-8 border-t border-[#1a1a1a]/5 opacity-60 mt-8">
+                    <div className="flex flex-col sm:flex-row gap-8 pt-6 border-t border-[#1a1a1a]/5 opacity-60 mt-4">
                       {selectedCharacter.publishedDate && (
                         <div className="flex flex-col gap-1">
                           <p className="font-mono text-[8px] uppercase tracking-widest opacity-40">Published</p>
@@ -2054,7 +2029,6 @@ function AppContent() {
                       )}
                     </div>
                   </div>
-                </div>
 
                 {selectedCharacter.motifValues && (() => {
                   const structuredMotifs = getStructuredMotifs(selectedCharacter.motifValues);
@@ -2072,8 +2046,8 @@ function AppContent() {
                   if (activeMotifs.length === 0) return null;
 
                   return (
-                    <div className="mb-16 relative">
-                      <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-6 flex items-center gap-2">
+                    <div className="mb-16 mt-4 relative">
+                      <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
                         <Layers className="w-3 h-3" /> Observed Motif Profile
                       </h4>
                       
