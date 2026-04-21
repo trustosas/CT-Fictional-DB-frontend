@@ -226,6 +226,7 @@ function AppContent() {
   const [analysisMarkdown, setAnalysisMarkdown] = useState<string>('');
   const [isFetchingAnalysis, setIsFetchingAnalysis] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'notFound' | 'empty' | 'available'>('idle');
+  const [copyStatus, setCopyStatus] = useState<'discord' | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [latestCommitSha, setLatestCommitSha] = useState<string | null>(null);
 
@@ -1737,9 +1738,42 @@ function AppContent() {
                   </button>
                 </div>
 
-                <div className="mb-12">
-                  <h2 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words">
+                <div className="mb-12 relative">
+                  <h2 
+                    onClick={() => {
+                      const shareText = [
+                        `# ${selectedCharacter.name}`,
+                        `## ${formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)} | ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}`,
+                        "",
+                        `> **Source:** ${selectedCharacter.source} (${selectedCharacter.year})`,
+                        `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude}`,
+                        "",
+                        "### Analysis",
+                        analysisStatus === 'available' ? analysisMarkdown : "_Analysis pending or missing._",
+                        "",
+                        `-# Shared from CT in Fiction | ${window.location.origin}${window.location.pathname}`
+                      ].join('\n');
+                      
+                      navigator.clipboard.writeText(shareText).then(() => {
+                        setCopyStatus('discord');
+                        setTimeout(() => setCopyStatus(null), 2000);
+                      });
+                    }}
+                    className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words cursor-pointer hover:opacity-80 transition-opacity active:scale-[0.98] select-none"
+                  >
                     {selectedCharacter.name}
+                    <AnimatePresence>
+                      {copyStatus === 'discord' && (
+                        <motion.span
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute -top-6 left-0 font-mono text-[9px] uppercase tracking-widest text-[#1a1a1a]/40 pointer-events-none"
+                        >
+                          Formatted for Discord
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </h2>
                   <div className="flex gap-4 items-center w-full min-w-0">
                     <button 
@@ -1877,7 +1911,7 @@ function AppContent() {
                         className="w-full flex items-center justify-between group"
                       >
                         <h4 className="font-mono text-[10px] uppercase tracking-widest opacity-40 flex items-center gap-2 group-hover:opacity-100 transition-opacity">
-                          <Layers className="w-3 h-3" /> Function Stack
+                          <Layers className="w-3 h-3" /> Function Hierarchy
                         </h4>
                         <ChevronDown className={`w-3 h-3 opacity-20 group-hover:opacity-100 transition-all ${expandedSections.has('functions') ? 'rotate-180' : ''}`} />
                       </button>
