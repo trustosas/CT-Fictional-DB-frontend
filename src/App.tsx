@@ -1612,6 +1612,7 @@ function AppContent() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="character-card group cursor-pointer"
+                data-quadra={(char.quadra || char.rawQuadra || '').toLowerCase()}
                 onClick={() => handleSelectCharacter(char)}
               >
                 <div className="character-image-container aspect-[16/9] flex items-center justify-center bg-[#1a1a1a]/5">
@@ -1717,6 +1718,7 @@ function AppContent() {
               <motion.div 
                 layoutId={selectedCharacter.id}
                 className="fixed inset-y-0 right-0 w-full md:w-[750px] bg-[#f5f2ed] z-50 shadow-2xl p-8 md:p-16 overflow-y-auto"
+                data-quadra={(selectedCharacter.quadra || selectedCharacter.rawQuadra || '').toLowerCase()}
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}

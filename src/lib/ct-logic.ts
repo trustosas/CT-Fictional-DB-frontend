@@ -331,7 +331,7 @@ export function getDevelopmentName(symbol: string, leadEnergetic: string, behavi
 
 export function formatTypeDisplay(type: string, rawQuadra?: string): string {
   if (rawQuadra && rawQuadra.trim().length > 0) {
-    return `${rawQuadra.trim()}-type`;
+    return rawQuadra.trim();
   }
   if (!type) return '';
   const lead = type.substring(0, 2);
