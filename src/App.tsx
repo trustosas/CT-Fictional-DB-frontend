@@ -848,7 +848,7 @@ function AppContent() {
                 <span className="font-sans tracking-[0.2em] whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getDevelopmentName(value, '', selectedBehaviourQualia || undefined)}</span>
               </span>
-            ) : label === 'Subtype' && value ? (
+            ) : label === 'Inter-Function Dynamics' && value ? (
               <span className="flex items-center gap-3">
                 <span className="font-serif italic text-sm whitespace-nowrap">{value}</span>
                 <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter font-normal">{getSubtypeName(value)}</span>
@@ -905,7 +905,7 @@ function AppContent() {
                             <span className="font-sans text-sm font-bold tracking-[0.2em] whitespace-nowrap">{opt}</span>
                             <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getDevelopmentName(opt, '', selectedBehaviourQualia || undefined)}</span>
                           </>
-                        ) : label === 'Subtype' ? (
+                        ) : label === 'Inter-Function Dynamics' ? (
                           <>
                             <span className="font-serif italic text-sm whitespace-nowrap">{opt}</span>
                             <span className="font-mono text-[9px] opacity-40 uppercase tracking-tighter leading-tight">{getSubtypeName(opt)}</span>
@@ -1100,9 +1100,13 @@ function AppContent() {
   }, [isLoading, mediumSlug, activeMedium, workSlug, activeWork, subjectSlug, selectedCharacter, currentView]);
 
   const hasActiveFilters = useMemo(() => {
-    if (currentView === 'all-works' || currentView === 'medium') {
-       // In these views, search filters WORKS, not switching to subject list
+    if (currentView === 'all-works') {
+       // In the Works (All Media) collection, archetype filters trigger the subject list
        return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedMotifs.length > 0;
+    }
+    if (currentView === 'medium') {
+       // Media pages (Individual mediums) are NOT affected by archetype filters
+       return false;
     }
     return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedMotifs.length > 0;
   }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedMotifs, currentView]);
@@ -1496,7 +1500,7 @@ function AppContent() {
                         placeholder="All"
                       />
                       <CustomSelect 
-                        label="Subtype"
+                        label="Inter-Function Dynamics"
                         value={selectedSubtype}
                         options={subtypes}
                         onChange={setSelectedSubtype}
@@ -1732,18 +1736,18 @@ function AppContent() {
                   <h2 className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words">
                     {selectedCharacter.name}
                   </h2>
-                  <div className="flex gap-4 items-center min-w-0">
+                  <div className="flex gap-4 items-center w-full min-w-0">
                     <button 
                       onClick={() => navigateToWork(selectedCharacter.source)}
-                      className="font-serif italic text-xl opacity-60 hover:opacity-100 hover:underline transition-all text-left flex items-center gap-2 min-w-0"
+                      className="font-serif italic text-xl opacity-60 hover:opacity-100 hover:underline transition-all text-left flex items-center gap-2 min-w-0 shrink flex-shrink"
                       title={`${selectedCharacter.source} (${selectedCharacter.year})`}
                     >
                       <span className="truncate">{selectedCharacter.source}</span>
                       <span className="flex-shrink-0">({selectedCharacter.year})</span>
                     </button>
-                    <div className="h-px flex-1 bg-[#1a1a1a]/10 hidden sm:block" />
+                    <div className="h-px flex-1 bg-[#1a1a1a]/10" />
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                      <span className="font-mono text-sm font-bold mb-1">{formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)}</span>
+                      <span className="font-mono text-sm font-bold mb-0.5">{formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)}</span>
                       <span className={`font-sans text-lg font-bold tracking-[0.2em] leading-none whitespace-nowrap ${!selectedCharacter.finalDevelopment ? 'opacity-40' : ''}`}>
                         {selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}
                       </span>
@@ -1776,7 +1780,7 @@ function AppContent() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
                   {selectedCharacter.subtype && (
                     <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
-                      <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Subtype</p>
+                      <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Inter-Function Dynamics</p>
                       <span className="font-serif italic text-xl block leading-none mb-1">{selectedCharacter.subtype}</span>
                       <p className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{getSubtypeName(selectedCharacter.subtype)}</p>
                     </div>

@@ -378,22 +378,22 @@ export interface DerivedCTData {
 
 export function getSubtypeName(subtype: string): string {
   const mapping: Record<string, string> = {
-    'Ti+Ne': 'The Armchair Philosopher',
-    'Ti+Si': 'The Scholar',
-    'Si+Fe': 'The Eternal Parent',
-    'Ne+Fe': 'The Social Clown',
-    'Ti+Se': 'The Analytical Sensationalist',
-    'Ti+Ni': 'The Alchemist',
-    'Ni+Fe': 'The Guru',
-    'Fe+Se': 'The Persona-Sensitive Sensationalist',
-    'Fi+Se': 'The Sensual Individualist',
-    'Fi+Ni': 'The Avant Garde',
-    'Ni+Te': 'The Deadpan',
-    'Te+Se': 'The Bulldozer',
-    'Fi+Ne': 'The Fairy',
-    'Fi+Si': 'The Gnome',
-    'Si+Te': 'The Lawyer/Bureaucrat',
-    'Te+Ne': 'The Nerd & Scientist'
+    'Ti+Ne': 'Ephemeralist',
+    'Ti+Se': 'Sensationalist',
+    'Fi+Se': 'Sensualist',
+    'Fi+Ne': 'Etherealist',
+    'Fe+Si': 'Diplomat',
+    'Fe+Ni': 'Sectarian',
+    'Te+Ni': 'Meritocrat',
+    'Te+Si': 'Bureaucrat',
+    'Ti+Si': 'Scholastic',
+    'Ti+Ni': 'Cabbalist',
+    'Fi+Ni': 'Occultist',
+    'Fi+Si': 'Druidist',
+    'Fe+Ne': 'Inspirer',
+    'Fe+Se': 'Persuader',
+    'Te+Se': 'Realizer',
+    'Te+Ne': 'Inventor'
   };
   return mapping[subtype] || '';
 }
