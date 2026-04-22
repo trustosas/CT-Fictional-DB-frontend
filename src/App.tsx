@@ -23,20 +23,29 @@ const parseDatabaseDate = (dateStr: string) => {
     const dateMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dateMatch) {
       const [full, m, d, y] = dateMatch;
-      s = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${s.slice(full.length)}`;
+      const rest = s.slice(full.length).trim();
+      s = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${rest ? 'T' + rest : ''}`;
+    } else {
+      s = s.replace(' ', 'T');
     }
 
     // 2. Enforce Lagos Timezone (UTC+1) if offset is missing
-    const hasOffset = s.includes('Z') || /[+-]\d{2}(:?\d{2})?$/.test(s);
+    // Offsets look like Z, +HH:mm, -HH:mm, +HHmm, -HHmm
+    // We ensure at least 4 digits (HHmm) or Z to avoid matching the day (-DD)
+    const hasOffset = /Z$|[+-]\d{2}:?\d{2}$/.test(s);
+    
     if (!hasOffset) {
-      if (s.includes(':')) {
-        // If time is present, respect it and add Lagos offset
-        s = s + ' +0100';
+      if (s.includes('T')) {
+        // Has time, add offset in strict ISO format
+        s = s + '+01:00';
       } else {
         // Date only - treat as midnight Lagos time
-        s = s + ' 00:00:00 +0100';
+        s = s + 'T00:00:00+01:00';
       }
     }
+    
+    // Final check: ensure T separator and no spaces for strict parsers (e.g. Safari)
+    s = s.replace(/\s/g, 'T').replace(/TT/g, 'T');
     
     const date = new Date(s);
     return isNaN(date.getTime()) ? null : date;
