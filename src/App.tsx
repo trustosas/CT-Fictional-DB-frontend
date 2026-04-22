@@ -17,26 +17,28 @@ const parseDatabaseDate = (dateStr: string) => {
   if (!dateStr) return null;
   
   try {
-    // Handle M/D/YYYY format (e.g., 4/14/2026)
-    let processedStr = dateStr;
-    const dateParts = dateStr.split(' ')[0].split('/');
-    if (dateParts.length === 3 && dateParts[2].length === 4) {
-      const [m, d, y] = dateParts;
-      const isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-      processedStr = dateStr.replace(dateStr.split(' ')[0], isoDate);
+    let s = dateStr.trim();
+    
+    // 1. Normalize Date Format (M/D/YYYY to YYYY-MM-DD)
+    const dateMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (dateMatch) {
+      const [full, m, d, y] = dateMatch;
+      s = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${s.slice(full.length)}`;
     }
 
-    let normalizedStr = processedStr;
-    if (!processedStr.includes('Z') && !/[+-]\d{2}:?\d{2}$/.test(processedStr)) {
-      // Append +01:00 to treat it as a GMT+1 timestamp
-      // We use T separator for ISO compatibility
-      normalizedStr = processedStr.includes(' ') ? processedStr.replace(' ', 'T') + '+01:00' : processedStr;
+    // 2. Enforce Lagos Timezone (UTC+1) if offset is missing
+    const hasOffset = s.includes('Z') || /[+-]\d{2}(:?\d{2})?$/.test(s);
+    if (!hasOffset) {
+      if (s.includes(':')) {
+        // If time is present, respect it and add Lagos offset
+        s = s + ' +0100';
+      } else {
+        // Date only - treat as midnight Lagos time
+        s = s + ' 00:00:00 +0100';
+      }
     }
     
-    let date = new Date(normalizedStr);
-    if (isNaN(date.getTime())) {
-      date = new Date(dateStr);
-    }
+    const date = new Date(s);
     return isNaN(date.getTime()) ? null : date;
   } catch (e) {
     return null;
@@ -874,15 +876,16 @@ function AppContent() {
         return matchesSearch && matchesFilters(char, currentFilters);
       })
       .sort((a, b) => {
+        const getTime = (char: any, isEditedSort: boolean) => {
+          const dateStr = isEditedSort ? (char.editedDate || char.publishedDate) : char.publishedDate;
+          const d = parseDatabaseDate(dateStr || '');
+          return d ? d.getTime() : 0;
+        };
+
         if (subjectSortOrder === 'edited') {
-          const dateA = a.editedDate || a.publishedDate || '';
-          const dateB = b.editedDate || b.publishedDate || '';
-          return dateB.localeCompare(dateA);
+          return getTime(b, true) - getTime(a, true);
         }
-        // Default: Sort by publishedDate descending (newest first)
-        const dateA = a.publishedDate || '';
-        const dateB = b.publishedDate || '';
-        return dateB.localeCompare(dateA);
+        return getTime(b, false) - getTime(a, false);
       });
   }, [publishedCharacters, currentView, activeWork, activeMedium, searchQuery, currentFilters, subjectSortOrder]);
 
@@ -1156,25 +1159,22 @@ function AppContent() {
 
     // Apply Sorting
     const sorted = [...list].sort((a, b) => {
+      const getWorkTime = (workTitle: string, isEditedSort: boolean) => {
+        const workChars = publishedCharacters.filter(c => c.source === workTitle);
+        if (workChars.length === 0) return 0;
+        
+        return Math.max(...workChars.map(c => {
+          const dateStr = isEditedSort ? (c.editedDate || c.publishedDate) : c.publishedDate;
+          const d = parseDatabaseDate(dateStr || '');
+          return d ? d.getTime() : 0;
+        }));
+      };
+
       if (workSortOrder === 'published') {
-        const charA = publishedCharacters.filter(c => c.source === a.title);
-        const charB = publishedCharacters.filter(c => c.source === b.title);
-        const dateA = charA.reduce((max, c) => c.publishedDate && c.publishedDate > max ? c.publishedDate : max, '');
-        const dateB = charB.reduce((max, c) => c.publishedDate && c.publishedDate > max ? c.publishedDate : max, '');
-        return dateB.localeCompare(dateA);
+        return getWorkTime(b.title, false) - getWorkTime(a.title, false);
       }
       if (workSortOrder === 'edited') {
-        const charA = publishedCharacters.filter(c => c.source === a.title);
-        const charB = publishedCharacters.filter(c => c.source === b.title);
-        const dateA = charA.reduce((max, c) => {
-          const effectiveDate = c.editedDate || c.publishedDate || '';
-          return effectiveDate > max ? effectiveDate : max;
-        }, '');
-        const dateB = charB.reduce((max, c) => {
-          const effectiveDate = c.editedDate || c.publishedDate || '';
-          return effectiveDate > max ? effectiveDate : max;
-        }, '');
-        return dateB.localeCompare(dateA);
+        return getWorkTime(b.title, true) - getWorkTime(a.title, true);
       }
       if (workSortOrder === 'year') return b.year.localeCompare(a.year);
       if (workSortOrder === 'subjects') {
