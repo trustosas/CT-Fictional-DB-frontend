@@ -25,6 +25,8 @@ export interface Character {
   initialDevelopment: string;
   finalDevelopment: string;
   emotionalAttitude: string;
+  unguardedness: string;
+  guardedness: string;
   analysis: string;
   notes?: string;
   isPublished: boolean;

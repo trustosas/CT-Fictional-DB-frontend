@@ -20,7 +20,7 @@ export async function fetchCharacters(): Promise<Character[]> {
         skipEmptyLines: 'greedy',
         complete: (results) => {
           const characters: Character[] = results.data.map((row: any, index: number) => {
-            // Mapping based on the observed spreadsheet structure:
+            // Mapping based on the updated spreadsheet structure:
             // 0: Medium
             // 1: Work Title
             // 2: Year
@@ -29,7 +29,7 @@ export async function fetchCharacters(): Promise<Character[]> {
             // 5: Subject Image URL
             // 6: Type
             // 7: Alternate Type
-            // 8: Subtype
+            // 8: Subtype (Inter-Function Dynamics)
             // 9: Lead Energetic
             // 10: Auxiliary Energetic
             // 11: Tertiary Energetic
@@ -42,29 +42,32 @@ export async function fetchCharacters(): Promise<Character[]> {
             // 18: Perception Axis
             // 19: Behaviour Qualia
             // 20: Quadra
-            // 21: Raw Quadra
-            // 22: Initial Development
-            // 23: Final Development
-            // 24: Emotional Attitude
-            // 25: Analysis
-            // 26: Notes
-            // 27: isPublished
-            // 28: publishedDate
-            // 29: editedDate
-            // 30: isWorkArtOpaque
-            // 31+: Motifs (96 values)
+            // 21: Emotional Attitude
+            // 22: Unguardedness
+            // 23: Guardedness
+            // 24: Raw Quadra
+            // 25: Initial Development
+            // 26: Final Development
+            // 27: Analysis
+            // 28: Notes
+            // 29: isPublished
+            // 30: publishedDate
+            // 31: editedDate
+            // 32: isWorkArtOpaque
+            // 33: Author
+            // 34+: Motifs
 
             const name = row[4] || '';
             const type = row[6] || '';
             
-            // Extract motif values starting from index 31
-            const motifValues = row.slice(31, 31 + 96).map((val: any) => {
+            // Extract motif values starting from index 34
+            const motifValues = row.slice(34).map((val: any) => {
               const sVal = String(val).trim().toUpperCase();
               return sVal === 'TRUE' || sVal === '1' || sVal === 'YES';
             });
 
-            const isPublished = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[27]).trim().toUpperCase());
-            const isWorkArtOpaque = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[30]).trim().toUpperCase());
+            const isPublished = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[29]).trim().toUpperCase());
+            const isWorkArtOpaque = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[32]).trim().toUpperCase());
 
             return {
               id: `char-${index}`,
@@ -87,17 +90,19 @@ export async function fetchCharacters(): Promise<Character[]> {
               perceptionAxis: row[18] || '',
               behaviourQualia: row[19] || '',
               quadra: row[20] || '',
-              rawQuadra: row[21] || '',
+              emotionalAttitude: row[21] || '',
+              unguardedness: row[22] || '',
+              guardedness: row[23] || '',
+              rawQuadra: row[24] || '',
               alternateType: row[7] || '',
               subtype: row[8] || '',
-              initialDevelopment: row[22] || '',
-              finalDevelopment: row[23] || '',
-              emotionalAttitude: row[24] || '',
-              analysis: row[25] || '',
-              notes: row[26] || '',
+              initialDevelopment: row[25] || '',
+              finalDevelopment: row[26] || '',
+              analysis: row[27] || '',
+              notes: row[28] || '',
               isPublished,
-              publishedDate: row[28] || '',
-              editedDate: row[29] || '',
+              publishedDate: row[30] || '',
+              editedDate: row[31] || '',
               isWorkArtOpaque,
               motifValues: motifValues.length > 0 ? motifValues : undefined
             };

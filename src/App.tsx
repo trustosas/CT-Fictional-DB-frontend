@@ -1820,8 +1820,10 @@ function AppContent() {
                                 selectedCharacter.behaviourQualia && `> **Qualia:** ${selectedCharacter.behaviourQualia}`,
                                 `> **Development:** ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment} (${getDevelopmentName(selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment, selectedCharacter.leadEnergetic, selectedCharacter.behaviourQualia || undefined)})`,
                                 selectedCharacter.emotionalAttitude && `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude} (${getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) || getEmotionalCategory(selectedCharacter.emotionalAttitude)})`,
+                                selectedCharacter.unguardedness && `> **Unguardedness:** ${selectedCharacter.unguardedness}`,
+                                selectedCharacter.guardedness && `> **Guardedness:** ${selectedCharacter.guardedness}`,
                                 selectedCharacter.alternateType && `> **Alternate Type:** ${formatTypeDisplay(selectedCharacter.alternateType, selectedCharacter.rawQuadra)}`,
-                                `[Analysis](${currentPageUrl}#analysis)`,
+                                analysisStatus === 'available' && `[Analysis](${currentPageUrl}#analysis)`,
                                 `-# Shared from [CT in Fiction](${baseOriginUrl})`
                               ].filter(item => typeof item === 'string').join('\n').replace(/\n\s*\n/g, '\n');
                               
@@ -1863,6 +1865,8 @@ function AppContent() {
                                 selectedCharacter.behaviourQualia && `> **Qualia:** ${selectedCharacter.behaviourQualia}`,
                                 `> **Development:** ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment} (${getDevelopmentName(selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment, selectedCharacter.leadEnergetic, selectedCharacter.behaviourQualia || undefined)})`,
                                 selectedCharacter.emotionalAttitude && `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude} (${getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) || getEmotionalCategory(selectedCharacter.emotionalAttitude)})`,
+                                selectedCharacter.unguardedness && `> **Unguardedness:** ${selectedCharacter.unguardedness}`,
+                                selectedCharacter.guardedness && `> **Guardedness:** ${selectedCharacter.guardedness}`,
                                 selectedCharacter.alternateType && `> **Alternate Type:** ${formatTypeDisplay(selectedCharacter.alternateType, selectedCharacter.rawQuadra)}`,
                                 "### Energetics",
                                 `**Lead:** ${ct.energetics.lead} • **Auxiliary:** ${ct.energetics.auxiliary} • **Tertiary:** ${ct.energetics.tertiary} • **Polar:** ${ct.energetics.polar}`,
@@ -2003,6 +2007,18 @@ function AppContent() {
                       ) : (
                         <p className="font-serif italic text-xl leading-none">{selectedCharacter.emotionalAttitude}</p>
                       )}
+                    </div>
+                  )}
+                  {selectedCharacter.unguardedness && (
+                    <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
+                      <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Unguardedness</p>
+                      <span className="font-serif italic text-xl block leading-none">{selectedCharacter.unguardedness}</span>
+                    </div>
+                  )}
+                  {selectedCharacter.guardedness && (
+                    <div className="border border-[#1a1a1a]/5 p-4 rounded bg-[#f5f2ed]/30">
+                      <p className="font-mono text-[9px] uppercase opacity-40 mb-2">Guardedness</p>
+                      <span className="font-serif italic text-xl block leading-none">{selectedCharacter.guardedness}</span>
                     </div>
                   )}
                   {selectedCharacter.alternateType && (
