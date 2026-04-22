@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
-import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check, User, FileText } from 'lucide-react';
+import { Search, ArrowRight, X, Zap, Activity, Compass, Layers, ChevronLeft, ChevronDown, Info, Loader2, AlertCircle, Menu, Check, User, FileText, Hash } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -226,7 +226,9 @@ function AppContent() {
   const [analysisMarkdown, setAnalysisMarkdown] = useState<string>('');
   const [isFetchingAnalysis, setIsFetchingAnalysis] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'notFound' | 'empty' | 'available'>('idle');
-  const [copyStatus, setCopyStatus] = useState<'discord' | 'loading' | 'image' | 'imageError' | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'macro' | 'mini' | 'loading' | 'image' | 'imageError' | null>(null);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const shareOptionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [latestCommitSha, setLatestCommitSha] = useState<string | null>(null);
 
@@ -1756,77 +1758,30 @@ function AppContent() {
                   </button>
                 </div>
 
-                <div className="mb-12 relative">
+                <div className="mb-12 relative group/subject">
                   <h2 
                     onClick={() => {
-                      // Only block if we are actually in the middle of a fetch
-                      if (isFetchingAnalysis) {
-                        setCopyStatus('loading');
-                        setTimeout(() => setCopyStatus(null), 2000);
-                        return;
+                      if (showShareOptions) {
+                        setShowShareOptions(false);
+                        if (shareOptionsTimeoutRef.current) clearTimeout(shareOptionsTimeoutRef.current);
+                      } else {
+                        setShowShareOptions(true);
+                        if (shareOptionsTimeoutRef.current) clearTimeout(shareOptionsTimeoutRef.current);
+                        shareOptionsTimeoutRef.current = setTimeout(() => setShowShareOptions(false), 1500);
                       }
-
-                      // If we are idle but have no data, don't allow (shouldn't really happen if detail is open)
-                      if (analysisStatus === 'idle' && !selectedCharacter.analysis) {
-                        // proceed anyway with missing analysis
-                      }
-
-                      const motifsList = selectedCharacter.motifValues 
-                        ? getStructuredMotifs(selectedCharacter.motifValues)
-                            .flatMap(group => 
-                              group.motifs
-                                .filter(m => m.value)
-                                .map(m => `**${group.function}** *${m.label.split(':')[0].trim()}*`)
-                            ).join(', ')
-                        : null;
-
-                      const currentPageUrl = window.location.href;
-                      const baseOriginUrl = window.location.origin;
-
-                      const shareText = [
-                        `# [${selectedCharacter.name}](${currentPageUrl})`,
-                        `## ${formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)} | ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}`,
-                        "",
-                        `> **Source:** ${selectedCharacter.source} (${selectedCharacter.year})`,
-                        selectedCharacter.subtype && `> **Inter-Function Dynamics:** ${selectedCharacter.subtype} (${getSubtypeName(selectedCharacter.subtype)})`,
-                        selectedCharacter.behaviourQualia && `> **Qualia:** ${selectedCharacter.behaviourQualia}`,
-                        `> **Development:** ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment} (${getDevelopmentName(selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment, selectedCharacter.leadEnergetic, selectedCharacter.behaviourQualia || undefined)})`,
-                        selectedCharacter.emotionalAttitude && `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude} (${getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) || getEmotionalCategory(selectedCharacter.emotionalAttitude)})`,
-                        selectedCharacter.alternateType && `> **Alternate Type:** ${formatTypeDisplay(selectedCharacter.alternateType, selectedCharacter.rawQuadra)}`,
-                        "",
-                        "### Energetics",
-                        `**Lead:** ${ct.energetics.lead} • **Auxiliary:** ${ct.energetics.auxiliary} • **Tertiary:** ${ct.energetics.tertiary} • **Polar:** ${ct.energetics.polar}`,
-                        "",
-                        "### Function Hierarchy",
-                        `**Lead:** ${ct.functions.lead} • **Auxiliary:** ${ct.functions.auxiliary} • **Tertiary:** ${ct.functions.tertiary} • **Polar:** ${ct.functions.polar}`,
-                        "",
-                        "### Axes & Quadra",
-                        `- **Judgment:** ${ct.axes.judgment}`,
-                        `- **Perception:** ${ct.axes.perception}`,
-                        `- **Quadra:** ${ct.quadra}`,
-                        "",
-                        motifsList && "### Observed Motif Profile",
-                        motifsList && motifsList,
-                        motifsList && "",
-                        "### Analysis",
-                        analysisStatus === 'available' ? formatAnalysisForDiscord(analysisMarkdown) : "_Analysis pending or missing._",
-                        "",
-                        selectedCharacter.notes && "### Analyst Notes",
-                        selectedCharacter.notes && selectedCharacter.notes.split('\n').map(line => `> ${line}`).join('\n'),
-                        "",
-                        `-# Shared from [CT in Fiction](${baseOriginUrl})`
-                      ].filter(item => typeof item === 'string').join('\n');
-                      
-                      navigator.clipboard.writeText(shareText).then(() => {
-                        setCopyStatus('discord');
-                        setTimeout(() => setCopyStatus(null), 2000);
-                      });
                     }}
-                    className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words cursor-pointer hover:opacity-80 transition-opacity active:scale-[0.98] select-none"
+                    onMouseEnter={() => {
+                      setShowShareOptions(true);
+                      if (shareOptionsTimeoutRef.current) clearTimeout(shareOptionsTimeoutRef.current);
+                    }}
+                    onMouseLeave={() => {
+                      shareOptionsTimeoutRef.current = setTimeout(() => setShowShareOptions(false), 1500);
+                    }}
+                    className="font-serif text-4xl xs:text-5xl md:text-7xl leading-tight mb-4 break-words select-none relative cursor-pointer"
                   >
                     {selectedCharacter.name}
                     <AnimatePresence mode="wait">
-                      {copyStatus && (
+                      {copyStatus ? (
                         <motion.span
                           key={copyStatus}
                           initial={{ opacity: 0, y: 5 }}
@@ -1834,8 +1789,109 @@ function AppContent() {
                           exit={{ opacity: 0 }}
                           className="absolute -top-6 left-0 font-mono text-[9px] uppercase tracking-widest text-[#1a1a1a]/40 pointer-events-none"
                         >
-                          {copyStatus === 'discord' ? 'Formatted for Discord' : 'Loading analysis...'}
+                          {copyStatus === 'macro' ? 'Full Profile Copied' : 
+                           copyStatus === 'mini' ? 'Mini Summary Copied' :
+                           copyStatus === 'loading' ? 'Loading analysis...' : ''}
                         </motion.span>
+                      ) : showShareOptions && (
+                        <motion.div
+                          key="share-options"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          onMouseEnter={() => {
+                            if (shareOptionsTimeoutRef.current) clearTimeout(shareOptionsTimeoutRef.current);
+                          }}
+                          onMouseLeave={() => {
+                            shareOptionsTimeoutRef.current = setTimeout(() => setShowShareOptions(false), 1500);
+                          }}
+                          className="absolute -top-6 left-0 flex items-center gap-4 py-1"
+                        >
+                          <button 
+                            onClick={() => {
+                              const currentPageUrl = window.location.href;
+                              const baseOriginUrl = window.location.origin;
+
+                              const shareText = [
+                                `# [${selectedCharacter.name}](${currentPageUrl})`,
+                                `## ${formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)} | ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}`,
+                                `> **Source:** ${selectedCharacter.source} (${selectedCharacter.year})`,
+                                selectedCharacter.subtype && `> **Inter-Function Dynamics:** ${selectedCharacter.subtype} (${getSubtypeName(selectedCharacter.subtype)})`,
+                                selectedCharacter.behaviourQualia && `> **Qualia:** ${selectedCharacter.behaviourQualia}`,
+                                `> **Development:** ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment} (${getDevelopmentName(selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment, selectedCharacter.leadEnergetic, selectedCharacter.behaviourQualia || undefined)})`,
+                                selectedCharacter.emotionalAttitude && `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude} (${getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) || getEmotionalCategory(selectedCharacter.emotionalAttitude)})`,
+                                selectedCharacter.alternateType && `> **Alternate Type:** ${formatTypeDisplay(selectedCharacter.alternateType, selectedCharacter.rawQuadra)}`,
+                                `[Analysis](${currentPageUrl}#analysis)`,
+                                `-# Shared from [CT in Fiction](${baseOriginUrl})`
+                              ].filter(item => typeof item === 'string').join('\n').replace(/\n\s*\n/g, '\n');
+                              
+                              navigator.clipboard.writeText(shareText).then(() => {
+                                setCopyStatus('mini');
+                                setShowShareOptions(false);
+                                setTimeout(() => setCopyStatus(null), 2000);
+                              });
+                            }}
+                            className="font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-all cursor-pointer"
+                          >
+                            Mini
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (isFetchingAnalysis) {
+                                setCopyStatus('loading');
+                                setTimeout(() => setCopyStatus(null), 2000);
+                                return;
+                              }
+
+                              const motifsList = selectedCharacter.motifValues 
+                                ? getStructuredMotifs(selectedCharacter.motifValues)
+                                    .flatMap(group => 
+                                      group.motifs
+                                        .filter(m => m.value)
+                                        .map(m => `**${group.function}** *${m.label.split(':')[0].trim()}*`)
+                                    ).join(', ')
+                                : null;
+
+                              const currentPageUrl = window.location.href;
+                              const baseOriginUrl = window.location.origin;
+
+                              const shareText = [
+                                `# [${selectedCharacter.name}](${currentPageUrl})`,
+                                `## ${formatTypeDisplay(selectedCharacter.type, selectedCharacter.rawQuadra)} | ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment}`,
+                                `> **Source:** ${selectedCharacter.source} (${selectedCharacter.year})`,
+                                selectedCharacter.subtype && `> **Inter-Function Dynamics:** ${selectedCharacter.subtype} (${getSubtypeName(selectedCharacter.subtype)})`,
+                                selectedCharacter.behaviourQualia && `> **Qualia:** ${selectedCharacter.behaviourQualia}`,
+                                `> **Development:** ${selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment} (${getDevelopmentName(selectedCharacter.finalDevelopment || selectedCharacter.initialDevelopment, selectedCharacter.leadEnergetic, selectedCharacter.behaviourQualia || undefined)})`,
+                                selectedCharacter.emotionalAttitude && `> **Emotional Attitude:** ${selectedCharacter.emotionalAttitude} (${getEmotionalDescriptor(selectedCharacter.emotionalAttitude, ct.axes.judgment) || getEmotionalCategory(selectedCharacter.emotionalAttitude)})`,
+                                selectedCharacter.alternateType && `> **Alternate Type:** ${formatTypeDisplay(selectedCharacter.alternateType, selectedCharacter.rawQuadra)}`,
+                                "### Energetics",
+                                `**Lead:** ${ct.energetics.lead} • **Auxiliary:** ${ct.energetics.auxiliary} • **Tertiary:** ${ct.energetics.tertiary} • **Polar:** ${ct.energetics.polar}`,
+                                "### Function Hierarchy",
+                                `**Lead:** ${ct.functions.lead} • **Auxiliary:** ${ct.functions.auxiliary} • **Tertiary:** ${ct.functions.tertiary} • **Polar:** ${ct.functions.polar}`,
+                                "### Axes & Quadra",
+                                `- **Judgment:** ${ct.axes.judgment}`,
+                                `- **Perception:** ${ct.axes.perception}`,
+                                `- **Quadra:** ${ct.quadra}`,
+                                motifsList && "### Observed Motif Profile",
+                                motifsList && motifsList,
+                                "### Analysis",
+                                analysisStatus === 'available' ? formatAnalysisForDiscord(analysisMarkdown) : "_Analysis pending or missing._",
+                                selectedCharacter.notes && "### Analyst Notes",
+                                selectedCharacter.notes && selectedCharacter.notes.split('\n').map(line => `> ${line}`).join('\n'),
+                                `-# Shared from [CT in Fiction](${baseOriginUrl})`
+                              ].filter(item => typeof item === 'string').join('\n').replace(/\n\s*\n/g, '\n');
+                              
+                              navigator.clipboard.writeText(shareText).then(() => {
+                                setCopyStatus('macro');
+                                setShowShareOptions(false);
+                                setTimeout(() => setCopyStatus(null), 2000);
+                              });
+                            }}
+                            className="font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-all cursor-pointer"
+                          >
+                            Macro
+                          </button>
+                        </motion.div>
                       )}
                     </AnimatePresence>
                   </h2>
@@ -2058,7 +2114,7 @@ function AppContent() {
                 </div>
 
                 {/* Analysis Section (Full-width) */}
-                <div className="border-t border-[#1a1a1a]/10 pt-4 mt-4">
+                <div id="analysis" className="border-t border-[#1a1a1a]/10 pt-4 mt-4 scroll-mt-24">
                     <button 
                       onClick={() => toggleSection('analysis')}
                       className="w-full flex items-center justify-between group py-2"
@@ -2067,6 +2123,13 @@ function AppContent() {
                         <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-40 flex items-center gap-2 group-hover:opacity-100 transition-opacity">
                           <Activity className="w-3 h-3" /> Analysis
                         </h4>
+                        <a 
+                          href="#analysis"
+                          onClick={(e) => e.stopPropagation()}
+                          className="opacity-0 group-hover:opacity-20 hover:!opacity-60 transition-opacity translate-y-[1px]"
+                        >
+                          <Hash className="w-3 h-3" />
+                        </a>
                         <AnimatePresence mode="wait">
                           {isFetchingAnalysis ? (
                             <motion.span 
