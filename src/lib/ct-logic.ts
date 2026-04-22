@@ -467,10 +467,14 @@ export interface FilterState {
   behaviourQualia: string | null;
   subtype: string | null;
   emotionalAttitude: string | null;
+  author: string | null;
   motifs: number[];
 }
 
 export function matchesFilters(char: any, filters: Partial<FilterState>): boolean {
+  // Global constraint: Do not display subjects without an author
+  if (!char.author) return false;
+
   const derived = deriveAxesFromQuadra(char.rawQuadra || char.quadra);
   const judgment = (char.judgmentAxis || derived.judgment).toLowerCase();
   const perception = (char.perceptionAxis || derived.perception).toLowerCase();
@@ -494,6 +498,8 @@ export function matchesFilters(char: any, filters: Partial<FilterState>): boolea
   
   if (filters.emotionalAttitude && !checkEmotionalMatch(char.emotionalAttitude, char.judgmentAxis, filters.emotionalAttitude)) return false;
   
+  if (filters.author && char.author !== filters.author) return false;
+
   if (filters.motifs && filters.motifs.length > 0) {
     if (!char.motifValues || !filters.motifs.every((idx: number) => char.motifValues![idx])) return false;
   }

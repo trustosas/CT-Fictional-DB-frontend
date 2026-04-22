@@ -205,16 +205,75 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('subjectSortOrder', subjectSortOrder);
   }, [subjectSortOrder]);
-  const [selectedQuadra, setSelectedQuadra] = useState<string | null>(null);
-  const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(null);
-  const [selectedJudgmentAxis, setSelectedJudgmentAxis] = useState<string | null>(null);
-  const [selectedPerceptionAxis, setSelectedPerceptionAxis] = useState<string | null>(null);
-  const [selectedLeadEnergetic, setSelectedLeadEnergetic] = useState<string | null>(null);
-  const [selectedAuxEnergetic, setSelectedAuxEnergetic] = useState<string | null>(null);
-  const [selectedBehaviourQualia, setSelectedBehaviourQualia] = useState<string | null>(null);
-  const [selectedSubtype, setSelectedSubtype] = useState<string | null>(null);
-  const [selectedEmotionalAttitude, setSelectedEmotionalAttitude] = useState<string | null>(null);
-  const [selectedMotifs, setSelectedMotifs] = useState<number[]>([]);
+
+  const [selectedQuadra, setSelectedQuadra] = useState<string | null>(() => localStorage.getItem('selectedQuadra'));
+  const [selectedDevelopment, setSelectedDevelopment] = useState<string | null>(() => localStorage.getItem('selectedDevelopment'));
+  const [selectedJudgmentAxis, setSelectedJudgmentAxis] = useState<string | null>(() => localStorage.getItem('selectedJudgmentAxis'));
+  const [selectedPerceptionAxis, setSelectedPerceptionAxis] = useState<string | null>(() => localStorage.getItem('selectedPerceptionAxis'));
+  const [selectedLeadEnergetic, setSelectedLeadEnergetic] = useState<string | null>(() => localStorage.getItem('selectedLeadEnergetic'));
+  const [selectedAuxEnergetic, setSelectedAuxEnergetic] = useState<string | null>(() => localStorage.getItem('selectedAuxEnergetic'));
+  const [selectedBehaviourQualia, setSelectedBehaviourQualia] = useState<string | null>(() => localStorage.getItem('selectedBehaviourQualia'));
+  const [selectedSubtype, setSelectedSubtype] = useState<string | null>(() => localStorage.getItem('selectedSubtype'));
+  const [selectedEmotionalAttitude, setSelectedEmotionalAttitude] = useState<string | null>(() => localStorage.getItem('selectedEmotionalAttitude'));
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(() => localStorage.getItem('selectedAuthor'));
+  const [selectedMotifs, setSelectedMotifs] = useState<number[]>(() => {
+    const saved = localStorage.getItem('selectedMotifs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    if (selectedQuadra) localStorage.setItem('selectedQuadra', selectedQuadra);
+    else localStorage.removeItem('selectedQuadra');
+  }, [selectedQuadra]);
+
+  useEffect(() => {
+    if (selectedDevelopment) localStorage.setItem('selectedDevelopment', selectedDevelopment);
+    else localStorage.removeItem('selectedDevelopment');
+  }, [selectedDevelopment]);
+
+  useEffect(() => {
+    if (selectedJudgmentAxis) localStorage.setItem('selectedJudgmentAxis', selectedJudgmentAxis);
+    else localStorage.removeItem('selectedJudgmentAxis');
+  }, [selectedJudgmentAxis]);
+
+  useEffect(() => {
+    if (selectedPerceptionAxis) localStorage.setItem('selectedPerceptionAxis', selectedPerceptionAxis);
+    else localStorage.removeItem('selectedPerceptionAxis');
+  }, [selectedPerceptionAxis]);
+
+  useEffect(() => {
+    if (selectedLeadEnergetic) localStorage.setItem('selectedLeadEnergetic', selectedLeadEnergetic);
+    else localStorage.removeItem('selectedLeadEnergetic');
+  }, [selectedLeadEnergetic]);
+
+  useEffect(() => {
+    if (selectedAuxEnergetic) localStorage.setItem('selectedAuxEnergetic', selectedAuxEnergetic);
+    else localStorage.removeItem('selectedAuxEnergetic');
+  }, [selectedAuxEnergetic]);
+
+  useEffect(() => {
+    if (selectedBehaviourQualia) localStorage.setItem('selectedBehaviourQualia', selectedBehaviourQualia);
+    else localStorage.removeItem('selectedBehaviourQualia');
+  }, [selectedBehaviourQualia]);
+
+  useEffect(() => {
+    if (selectedSubtype) localStorage.setItem('selectedSubtype', selectedSubtype);
+    else localStorage.removeItem('selectedSubtype');
+  }, [selectedSubtype]);
+
+  useEffect(() => {
+    if (selectedEmotionalAttitude) localStorage.setItem('selectedEmotionalAttitude', selectedEmotionalAttitude);
+    else localStorage.removeItem('selectedEmotionalAttitude');
+  }, [selectedEmotionalAttitude]);
+
+  useEffect(() => {
+    if (selectedAuthor) localStorage.setItem('selectedAuthor', selectedAuthor);
+    else localStorage.removeItem('selectedAuthor');
+  }, [selectedAuthor]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedMotifs', JSON.stringify(selectedMotifs));
+  }, [selectedMotifs]);
   const [showFilters, setShowFilters] = useState(false);
   const [activeMotifDesc, setActiveMotifDesc] = useState<string | null>(null);
   const [activeMotifId, setActiveMotifId] = useState<string | null>(null);
@@ -447,7 +506,7 @@ function AppContent() {
   }, [subjectSlug]);
 
   const publishedCharacters = useMemo(() => {
-    return characters.filter(c => c.isPublished);
+    return characters.filter(c => c.isPublished && c.author);
   }, [characters]);
 
   const media = useMemo(() => Array.from(new Set(publishedCharacters.map(c => c.medium))).sort(), [publishedCharacters]);
@@ -660,8 +719,9 @@ function AppContent() {
     behaviourQualia: selectedBehaviourQualia,
     subtype: selectedSubtype,
     emotionalAttitude: selectedEmotionalAttitude,
+    author: selectedAuthor,
     motifs: selectedMotifs
-  }), [selectedQuadra, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedDevelopment, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedMotifs]);
+  }), [selectedQuadra, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedDevelopment, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthor, selectedMotifs]);
 
   const developments = useMemo(() => {
     const filtered = viewFilteredCharacters.filter(c => 
@@ -767,6 +827,19 @@ function AppContent() {
     });
   }, [viewFilteredCharacters, currentFilters]);
 
+  const authors = useMemo(() => {
+    const filtered = viewFilteredCharacters.filter(c => 
+      matchesFilters(c, { ...currentFilters, author: null })
+    );
+    
+    const items = new Set<string>();
+    filtered.forEach(c => {
+      if (c.author) items.add(c.author);
+    });
+    
+    return Array.from(items).filter(Boolean).sort();
+  }, [viewFilteredCharacters, currentFilters]);
+
   // Reset dependent filters if they become invalid
   useEffect(() => {
     if (selectedJudgmentAxis && !judgmentAxes.includes(selectedJudgmentAxis)) setSelectedJudgmentAxis(null);
@@ -777,6 +850,7 @@ function AppContent() {
     if (selectedBehaviourQualia && !behaviourQualias.includes(selectedBehaviourQualia)) setSelectedBehaviourQualia(null);
     if (selectedSubtype && !subtypes.includes(selectedSubtype)) setSelectedSubtype(null);
     if (selectedEmotionalAttitude && !emotionalAttitudes.includes(selectedEmotionalAttitude)) setSelectedEmotionalAttitude(null);
+    if (selectedAuthor && !authors.includes(selectedAuthor)) setSelectedAuthor(null);
     if (selectedQuadra && !quadras.includes(selectedQuadra)) setSelectedQuadra(null);
 
     const availableIds = availableMotifs.map(m => m.id);
@@ -784,7 +858,7 @@ function AppContent() {
     if (validMotifs.length !== selectedMotifs.length) {
       setSelectedMotifs(validMotifs);
     }
-  }, [judgmentAxes, energetics, perceptionAxes, auxEnergetics, developments, behaviourQualias, subtypes, emotionalAttitudes, quadras, availableMotifs, selectedMotifs]);
+  }, [judgmentAxes, energetics, perceptionAxes, auxEnergetics, developments, behaviourQualias, subtypes, emotionalAttitudes, authors, quadras, availableMotifs, selectedMotifs]);
 
   const filteredCharacters = useMemo(() => {
     return publishedCharacters
@@ -1126,14 +1200,14 @@ function AppContent() {
   const hasActiveFilters = useMemo(() => {
     if (currentView === 'all-works') {
        // In the Works (All Media) collection, archetype filters trigger the subject list
-       return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedMotifs.length > 0;
+       return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthor || selectedMotifs.length > 0;
     }
     if (currentView === 'medium') {
        // Media pages (Individual mediums) are NOT affected by archetype filters
        return false;
     }
-    return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedMotifs.length > 0;
-  }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedMotifs, currentView]);
+    return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthor || selectedMotifs.length > 0;
+  }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthor, selectedMotifs, currentView]);
 
   const paginatedCharacters = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -1231,7 +1305,7 @@ function AppContent() {
               </nav>
 
               <div className="pt-6 mt-auto border-t border-white/5 font-mono text-[8px] uppercase tracking-widest opacity-20">
-                CT in Fiction v1.5
+                CT in Fiction v2.0
               </div>
             </motion.div>
           </>
@@ -1303,7 +1377,7 @@ function AppContent() {
                 {currentView === 'feed' ? 'Gallery' : 
                  currentView === 'all-works' ? 'All Media Collection' :
                  currentView === 'medium' ? `Medium Collection` :
-                 currentView === 'work' ? 'Work Profile' : 'CT in Fiction v1.5'}
+                 currentView === 'work' ? 'Work Profile' : 'CT in Fiction v2.0'}
               </span>
               <AnimatePresence>
                 {isSyncing && !error && (
@@ -1537,6 +1611,13 @@ function AppContent() {
                         onChange={setSelectedEmotionalAttitude}
                         placeholder="All"
                       />
+                      <CustomSelect 
+                        label="Author"
+                        value={selectedAuthor}
+                        options={authors}
+                        onChange={setSelectedAuthor}
+                        placeholder="All"
+                      />
                       <MultiSelect 
                         label="Motifs"
                         values={selectedMotifs}
@@ -1563,6 +1644,7 @@ function AppContent() {
                       setSelectedBehaviourQualia(null);
                       setSelectedSubtype(null);
                       setSelectedEmotionalAttitude(null);
+                      setSelectedAuthor(null);
                       setSelectedMotifs([]);
                     }}
                     className="w-fit font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 flex items-center gap-1.5 transition-opacity"
