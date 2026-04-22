@@ -17,37 +17,89 @@ const parseDatabaseDate = (dateStr: string) => {
   if (!dateStr) return null;
   
   try {
-    let s = dateStr.trim();
+    const s = dateStr.trim();
+    if (!s) return null;
+
+    // Split Date and Time components
+    let datePart = '';
+    let timePart = '';
     
-    // 1. Normalize Date Format (M/D/YYYY to YYYY-MM-DD)
-    const dateMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (dateMatch) {
-      const [full, m, d, y] = dateMatch;
-      const rest = s.slice(full.length).trim();
-      s = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${rest ? 'T' + rest : ''}`;
+    if (s.includes(' ')) {
+      const parts = s.split(/\s+/);
+      datePart = parts[0];
+      timePart = parts[1];
+    } else if (s.includes('T')) {
+      const parts = s.split('T');
+      datePart = parts[0];
+      timePart = parts[1];
     } else {
-      s = s.replace(' ', 'T');
+      datePart = s;
     }
 
-    // 2. Enforce Lagos Timezone (UTC+1) if offset is missing
-    // Offsets look like Z, +HH:mm, -HH:mm, +HHmm, -HHmm
-    // We ensure at least 4 digits (HHmm) or Z to avoid matching the day (-DD)
-    const hasOffset = /Z$|[+-]\d{2}:?\d{2}$/.test(s);
+    // 1. Process Date Part (M/D/YYYY or D/M/YYYY or YYYY-MM-DD)
+    let y = '', m = '', d = '';
+    const slashMatch = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
     
-    if (!hasOffset) {
-      if (s.includes('T')) {
-        // Has time, add offset in strict ISO format
-        s = s + '+01:00';
+    if (slashMatch) {
+      const [_, p1, p2, p3] = slashMatch;
+      y = p3.length === 2 ? `20${p3}` : p3;
+      
+      const val1 = parseInt(p1);
+      const val2 = parseInt(p2);
+      
+      if (val1 > 12) {
+        // Must be D/M/Y
+        d = p1.padStart(2, '0');
+        m = p2.padStart(2, '0');
+      } else if (val2 > 12) {
+        // Must be M/D/Y
+        m = p1.padStart(2, '0');
+        d = p2.padStart(2, '0');
       } else {
-        // Date only - treat as midnight Lagos time
-        s = s + 'T00:00:00+01:00';
+        // Ambiguous - default to Lagos/International preference (D/M/Y)
+        d = p1.padStart(2, '0');
+        m = p2.padStart(2, '0');
+      }
+    } else {
+      const isoMatch = datePart.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (isoMatch) {
+        y = isoMatch[1];
+        m = isoMatch[2].padStart(2, '0');
+        d = isoMatch[3].padStart(2, '0');
+      } else {
+        // Might be a native date string that Date() can handle directly
+        const fallback = new Date(s);
+        return isNaN(fallback.getTime()) ? null : fallback;
       }
     }
+
+    // 2. Process Time Part (HH:mm:ss)
+    let hh = '00', mm = '00', ss = '00';
+    if (timePart) {
+      const cleanTime = timePart.split(/[Z+-]/)[0];
+      const tMatch = cleanTime.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+      if (tMatch) {
+        hh = tMatch[1].padStart(2, '0');
+        mm = tMatch[2].padStart(2, '0');
+        ss = (tMatch[3] || '00').padStart(2, '0');
+      }
+    }
+
+    // 3. Process Offset (Default to Lagos UTC+1 if missing)
+    let offset = '+01:00';
+    const offsetMatch = s.match(/([+-]\d{2}):?(\d{2})$|Z$/);
+    if (offsetMatch) {
+      if (offsetMatch[0] === 'Z') {
+        offset = 'Z';
+      } else {
+        offset = `${offsetMatch[1]}:${offsetMatch[2]}`;
+      }
+    }
+
+    // Construct Strict ISO 8601 String
+    const isoString = `${y}-${m}-${d}T${hh}:${mm}:${ss}${offset}`;
+    const date = new Date(isoString);
     
-    // Final check: ensure T separator and no spaces for strict parsers (e.g. Safari)
-    s = s.replace(/\s/g, 'T').replace(/TT/g, 'T');
-    
-    const date = new Date(s);
     return isNaN(date.getTime()) ? null : date;
   } catch (e) {
     return null;
