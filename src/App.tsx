@@ -799,8 +799,8 @@ function AppContent() {
       })
       .sort((a, b) => {
         if (subjectSortOrder === 'edited') {
-          const dateA = a.editedDate || '';
-          const dateB = b.editedDate || '';
+          const dateA = a.editedDate || a.publishedDate || '';
+          const dateB = b.editedDate || b.publishedDate || '';
           return dateB.localeCompare(dateA);
         }
         // Default: Sort by publishedDate descending (newest first)
@@ -1090,8 +1090,14 @@ function AppContent() {
       if (workSortOrder === 'edited') {
         const charA = publishedCharacters.filter(c => c.source === a.title);
         const charB = publishedCharacters.filter(c => c.source === b.title);
-        const dateA = charA.reduce((max, c) => c.editedDate && c.editedDate > max ? c.editedDate : max, '');
-        const dateB = charB.reduce((max, c) => c.editedDate && c.editedDate > max ? c.editedDate : max, '');
+        const dateA = charA.reduce((max, c) => {
+          const effectiveDate = c.editedDate || c.publishedDate || '';
+          return effectiveDate > max ? effectiveDate : max;
+        }, '');
+        const dateB = charB.reduce((max, c) => {
+          const effectiveDate = c.editedDate || c.publishedDate || '';
+          return effectiveDate > max ? effectiveDate : max;
+        }, '');
         return dateB.localeCompare(dateA);
       }
       if (workSortOrder === 'year') return b.year.localeCompare(a.year);
