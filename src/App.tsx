@@ -1282,44 +1282,36 @@ function AppContent() {
         </label>
         <button 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-          className={`flex items-center justify-between w-full border-b border-[#1a1a1a]/10 py-2.5 px-0 text-left transition-all hover:border-[#1a1a1a]/30 ${isOpen ? 'border-[#1a1a1a]/60' : ''}`}
+          className="w-full flex items-center justify-between bg-transparent border-b border-[#1a1a1a]/30 py-1.5 text-[10px] font-mono tracking-wider text-left transition-colors hover:border-[#1a1a1a]"
         >
-          <div className="flex items-center gap-2 overflow-hidden flex-1">
-            <span className={`font-mono text-[10px] uppercase tracking-wider truncate ${values.length > 0 ? 'text-[#1a1a1a] font-bold' : 'opacity-30'}`}>
-              {values.length > 0 ? `${values.length} Selected` : placeholder}
-            </span>
-          </div>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ type: 'spring', damping: 20 }}
-            className="flex-shrink-0 ml-2"
-          >
-            <ChevronDown className="w-3 h-3 opacity-20" />
-          </motion.div>
+          <span className={`transition-opacity ${values.length > 0 ? 'opacity-100 font-bold' : 'opacity-50 uppercase text-[10px]'}`}>
+            {values.length > 0 ? `${values.length} Selected` : placeholder}
+          </span>
+          <ChevronDown className={`w-3 h-3 transition-transform duration-300 pointer-events-none ${isOpen ? 'rotate-180' : 'opacity-50 group-hover:opacity-100'}`} />
         </button>
 
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#1a1a1a]/10 shadow-2xl rounded-lg z-[100] overflow-hidden"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-[#f5f2ed] border border-[#1a1a1a]/20 shadow-2xl z-[100] overflow-hidden flex flex-col"
             >
-              <div className="p-2 border-b border-[#1a1a1a]/5">
+              <div className="p-2 border-b border-[#1a1a1a]/10">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 opacity-20" />
                   <input 
                     autoFocus
                     type="text" 
-                    placeholder="Search..."
-                    className="w-full bg-[#1a1a1a]/5 rounded-md py-2 pl-8 pr-3 font-mono text-[10px] focus:outline-none"
+                    placeholder="Search authors..."
+                    className="w-full bg-[#1a1a1a]/5 rounded px-3 py-2 font-mono text-[10px] focus:outline-none pl-8"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="max-h-[200px] overflow-y-auto editorial-scrollbar p-1">
+              <div className="max-h-[200px] overflow-y-auto minimal-scrollbar">
                 {filteredOptions.length === 0 && (
                   <div className="px-3 py-6 text-center opacity-30 font-mono text-[9px] uppercase tracking-widest">
                     No results
@@ -1329,24 +1321,20 @@ function AppContent() {
                   <button
                     key={opt}
                     onClick={() => toggleOption(opt)}
-                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-md transition-all text-left group/opt ${values.includes(opt) ? 'bg-[#1a1a1a] text-white' : 'hover:bg-[#1a1a1a]/5'}`}
+                    className="w-full px-4 py-2 text-[10px] font-mono tracking-wider text-left hover:bg-[#1a1a1a]/5 transition-colors flex items-center justify-between border-b border-[#1a1a1a]/5 last:border-0"
                   >
-                    <span className={`font-mono text-[10px] uppercase tracking-wider truncate flex-1 ${values.includes(opt) ? 'opacity-100' : 'opacity-60 group-hover/opt:opacity-100'}`}>
-                      {opt}
-                    </span>
+                    <span className="truncate max-w-[140px] uppercase text-[10px]">{opt}</span>
                     {values.includes(opt) && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
                   </button>
                 ))}
               </div>
               {values.length > 0 && (
-                <div className="p-2 border-t border-[#1a1a1a]/5 bg-[#f5f2ed]/30">
-                  <button 
-                    onClick={() => onChange([])}
-                    className="w-full py-1.5 font-mono text-[8px] uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity"
-                  >
-                    Clear Selected ({values.length})
-                  </button>
-                </div>
+                <button 
+                  onClick={() => onChange([])}
+                  className="p-2 text-[8px] font-mono uppercase tracking-widest text-center border-t border-[#1a1a1a]/10 hover:bg-[#1a1a1a]/5 transition-colors"
+                >
+                  Clear Selection ({values.length})
+                </button>
               )}
             </motion.div>
           )}
