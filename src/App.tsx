@@ -278,7 +278,14 @@ function AppContent() {
   const [selectedBehaviourQualia, setSelectedBehaviourQualia] = useState<string | null>(() => localStorage.getItem('selectedBehaviourQualia'));
   const [selectedSubtype, setSelectedSubtype] = useState<string | null>(() => localStorage.getItem('selectedSubtype'));
   const [selectedEmotionalAttitude, setSelectedEmotionalAttitude] = useState<string | null>(() => localStorage.getItem('selectedEmotionalAttitude'));
-  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(() => localStorage.getItem('selectedAuthor'));
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null); // Legacy, will replace with authors
+  const [selectedAuthors, setSelectedAuthors] = useState<string[]>(() => {
+    const saved = localStorage.getItem('selectedAuthors');
+    if (saved) return JSON.parse(saved);
+    // Migration: check old selectedAuthor
+    const old = localStorage.getItem('selectedAuthor');
+    return old ? [old] : [];
+  });
   const [selectedMotifs, setSelectedMotifs] = useState<number[]>(() => {
     const saved = localStorage.getItem('selectedMotifs');
     return saved ? JSON.parse(saved) : [];
@@ -330,9 +337,8 @@ function AppContent() {
   }, [selectedEmotionalAttitude]);
 
   useEffect(() => {
-    if (selectedAuthor) localStorage.setItem('selectedAuthor', selectedAuthor);
-    else localStorage.removeItem('selectedAuthor');
-  }, [selectedAuthor]);
+    localStorage.setItem('selectedAuthors', JSON.stringify(selectedAuthors));
+  }, [selectedAuthors]);
 
   useEffect(() => {
     localStorage.setItem('selectedMotifs', JSON.stringify(selectedMotifs));
@@ -754,6 +760,20 @@ function AppContent() {
     document.title = title;
   }, [currentView, activeWork, activeMedium, selectedCharacter]);
 
+  // Handle #analysis hash scrolling
+  useEffect(() => {
+    if (location.hash === '#analysis' && !isFetchingAnalysis && selectedCharacter) {
+      const el = document.getElementById('analysis');
+      if (el) {
+        // Use a timeout to ensure DOM is fully rendered/layout computed after expansion & markdown injection
+        const timer = setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.hash, analysisStatus, isFetchingAnalysis, selectedCharacter?.id]);
+
   const handleCopyImage = async (url: string) => {
     if (!url) return;
     setCopyStatus('loading');
@@ -784,9 +804,9 @@ function AppContent() {
     behaviourQualia: selectedBehaviourQualia,
     subtype: selectedSubtype,
     emotionalAttitude: selectedEmotionalAttitude,
-    author: selectedAuthor,
+    authors: selectedAuthors,
     motifs: selectedMotifs
-  }), [selectedQuadra, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedDevelopment, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthor, selectedMotifs]);
+  }), [selectedQuadra, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedDevelopment, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthors, selectedMotifs]);
 
   const developments = useMemo(() => {
     const filtered = viewFilteredCharacters.filter(c => 
@@ -894,7 +914,7 @@ function AppContent() {
 
   const authors = useMemo(() => {
     const filtered = viewFilteredCharacters.filter(c => 
-      matchesFilters(c, { ...currentFilters, author: null })
+      matchesFilters(c, { ...currentFilters, authors: [] })
     );
     
     const items = new Set<string>();
@@ -915,7 +935,12 @@ function AppContent() {
     if (selectedBehaviourQualia && !behaviourQualias.includes(selectedBehaviourQualia)) setSelectedBehaviourQualia(null);
     if (selectedSubtype && !subtypes.includes(selectedSubtype)) setSelectedSubtype(null);
     if (selectedEmotionalAttitude && !emotionalAttitudes.includes(selectedEmotionalAttitude)) setSelectedEmotionalAttitude(null);
-    if (selectedAuthor && !authors.includes(selectedAuthor)) setSelectedAuthor(null);
+    
+    const validAuthors = selectedAuthors.filter(a => authors.includes(a));
+    if (validAuthors.length !== selectedAuthors.length) {
+      setSelectedAuthors(validAuthors);
+    }
+
     if (selectedQuadra && !quadras.includes(selectedQuadra)) setSelectedQuadra(null);
 
     const availableIds = availableMotifs.map(m => m.id);
@@ -1201,6 +1226,128 @@ function AppContent() {
     );
   };
 
+  const AuthorMultiSelect = ({ 
+    label, 
+    values, 
+    options, 
+    onChange, 
+    placeholder 
+  }: { 
+    label: string, 
+    values: string[], 
+    options: string[], 
+    onChange: (val: string[]) => void,
+    placeholder: string
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt => 
+      opt.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const toggleOption = (val: string) => {
+      if (values.includes(val)) {
+        onChange(values.filter(v => v !== val));
+      } else {
+        onChange([...values, val]);
+      }
+    };
+
+    return (
+      <div className="flex flex-col gap-1.5 group relative" ref={containerRef}>
+        <label 
+          onClick={() => setIsOpen(!isOpen)}
+          className="font-mono text-[8px] uppercase tracking-widest opacity-70 text-[#1a1a1a] cursor-pointer"
+        >
+          {label}
+        </label>
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+          className={`flex items-center justify-between w-full border-b border-[#1a1a1a]/10 py-2.5 px-0 text-left transition-all hover:border-[#1a1a1a]/30 ${isOpen ? 'border-[#1a1a1a]/60' : ''}`}
+        >
+          <div className="flex items-center gap-2 overflow-hidden flex-1">
+            <span className={`font-mono text-[10px] uppercase tracking-wider truncate ${values.length > 0 ? 'text-[#1a1a1a] font-bold' : 'opacity-30'}`}>
+              {values.length > 0 ? `${values.length} Selected` : placeholder}
+            </span>
+          </div>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ type: 'spring', damping: 20 }}
+            className="flex-shrink-0 ml-2"
+          >
+            <ChevronDown className="w-3 h-3 opacity-20" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#1a1a1a]/10 shadow-2xl rounded-lg z-[100] overflow-hidden"
+            >
+              <div className="p-2 border-b border-[#1a1a1a]/5">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 opacity-20" />
+                  <input 
+                    autoFocus
+                    type="text" 
+                    placeholder="Search..."
+                    className="w-full bg-[#1a1a1a]/5 rounded-md py-2 pl-8 pr-3 font-mono text-[10px] focus:outline-none"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="max-h-[200px] overflow-y-auto editorial-scrollbar p-1">
+                {filteredOptions.length === 0 && (
+                  <div className="px-3 py-6 text-center opacity-30 font-mono text-[9px] uppercase tracking-widest">
+                    No results
+                  </div>
+                )}
+                {filteredOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => toggleOption(opt)}
+                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-md transition-all text-left group/opt ${values.includes(opt) ? 'bg-[#1a1a1a] text-white' : 'hover:bg-[#1a1a1a]/5'}`}
+                  >
+                    <span className={`font-mono text-[10px] uppercase tracking-wider truncate flex-1 ${values.includes(opt) ? 'opacity-100' : 'opacity-60 group-hover/opt:opacity-100'}`}>
+                      {opt}
+                    </span>
+                    {values.includes(opt) && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
+                  </button>
+                ))}
+              </div>
+              {values.length > 0 && (
+                <div className="p-2 border-t border-[#1a1a1a]/5 bg-[#f5f2ed]/30">
+                  <button 
+                    onClick={() => onChange([])}
+                    className="w-full py-1.5 font-mono text-[8px] uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity"
+                  >
+                    Clear Selected ({values.length})
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   const worksInMedium = useMemo(() => {
     let list = currentView === 'all-works' ? works : works.filter(w => {
       if (!activeMedium) return false;
@@ -1263,14 +1410,14 @@ function AppContent() {
   const hasActiveFilters = useMemo(() => {
     if (currentView === 'all-works') {
        // In the Works (All Media) collection, archetype filters trigger the subject list
-       return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthor || selectedMotifs.length > 0;
+       return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthors.length > 0 || selectedMotifs.length > 0;
     }
     if (currentView === 'medium') {
        // Media pages (Individual mediums) are NOT affected by archetype filters
        return false;
     }
-    return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthor || selectedMotifs.length > 0;
-  }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthor, selectedMotifs, currentView]);
+    return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthors.length > 0 || selectedMotifs.length > 0;
+  }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthors, selectedMotifs, currentView]);
 
   const paginatedCharacters = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -1780,11 +1927,11 @@ function AppContent() {
                         onChange={setSelectedEmotionalAttitude}
                         placeholder="All"
                       />
-                      <CustomSelect 
-                        label="Author"
-                        value={selectedAuthor}
+                      <AuthorMultiSelect 
+                        label="Authors"
+                        values={selectedAuthors}
                         options={authors}
-                        onChange={setSelectedAuthor}
+                        onChange={setSelectedAuthors}
                         placeholder="All"
                       />
                       <MultiSelect 
@@ -1813,7 +1960,7 @@ function AppContent() {
                       setSelectedBehaviourQualia(null);
                       setSelectedSubtype(null);
                       setSelectedEmotionalAttitude(null);
-                      setSelectedAuthor(null);
+                      setSelectedAuthors([]);
                       setSelectedMotifs([]);
                     }}
                     className="w-fit font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 flex items-center gap-1.5 transition-opacity"

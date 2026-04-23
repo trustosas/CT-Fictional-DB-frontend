@@ -467,7 +467,7 @@ export interface FilterState {
   behaviourQualia: string | null;
   subtype: string | null;
   emotionalAttitude: string | null;
-  author: string | null;
+  authors: string[];
   motifs: number[];
 }
 
@@ -498,7 +498,7 @@ export function matchesFilters(char: any, filters: Partial<FilterState>): boolea
   
   if (filters.emotionalAttitude && !checkEmotionalMatch(char.emotionalAttitude, char.judgmentAxis, filters.emotionalAttitude)) return false;
   
-  if (filters.author && char.author !== filters.author) return false;
+  if (filters.authors && filters.authors.length > 0 && !filters.authors.includes(char.author)) return false;
 
   if (filters.motifs && filters.motifs.length > 0) {
     if (!char.motifValues || !filters.motifs.every((idx: number) => char.motifValues![idx])) return false;
