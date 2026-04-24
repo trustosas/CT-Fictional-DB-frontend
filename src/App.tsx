@@ -1282,10 +1282,10 @@ function AppContent() {
         </label>
         <button 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-          className={`flex items-center justify-between w-full border-b border-[#1a1a1a]/10 py-2.5 px-0 text-left transition-all hover:border-[#1a1a1a]/30 ${isOpen ? 'border-[#1a1a1a]/60' : ''}`}
+          className={`flex items-center justify-between w-full border-b border-[#1a1a1a]/30 py-1.5 px-0 text-left transition-all hover:border-[#1a1a1a] ${isOpen ? 'border-[#1a1a1a]' : ''}`}
         >
           <div className="flex items-center gap-2 overflow-hidden flex-1">
-            <span className={`font-mono text-[10px] uppercase tracking-wider truncate ${values.length > 0 ? 'text-[#1a1a1a] font-bold' : 'opacity-30'}`}>
+            <span className={`font-mono text-[10px] uppercase tracking-wider truncate ${values.length > 0 ? 'text-[#1a1a1a] font-bold' : 'opacity-50'}`}>
               {values.length > 0 ? `${values.length} Selected` : placeholder}
             </span>
           </div>
@@ -1294,7 +1294,7 @@ function AppContent() {
             transition={{ type: 'spring', damping: 20 }}
             className="flex-shrink-0 ml-2"
           >
-            <ChevronDown className="w-3 h-3 opacity-20" />
+            <ChevronDown className={`w-3 h-3 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-20 group-hover:opacity-100'}`} />
           </motion.div>
         </button>
 
