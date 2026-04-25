@@ -1251,7 +1251,6 @@ function AppContent() {
                   className="w-full bg-[#1a1a1a]/5 px-3 py-2 text-[10px] font-mono focus:outline-none rounded"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  autoFocus
                 />
               </div>
               <div className="max-h-[200px] overflow-y-auto minimal-scrollbar">
@@ -1361,7 +1360,6 @@ function AppContent() {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 opacity-20" />
                   <input 
-                    autoFocus
                     type="text" 
                     placeholder="Search..."
                     className="w-full bg-[#1a1a1a]/5 rounded-md py-2 pl-8 pr-3 font-mono text-[10px] focus:outline-none"
@@ -1382,7 +1380,7 @@ function AppContent() {
                     onClick={() => toggleOption(opt)}
                     className={`flex items-center justify-between w-full px-3 py-2.5 rounded-md transition-all text-left group/opt ${values.includes(opt) ? 'bg-[#1a1a1a] text-white' : 'hover:bg-[#1a1a1a]/5'}`}
                   >
-                    <span className={`font-mono text-[10px] uppercase tracking-wider truncate flex-1 ${values.includes(opt) ? 'opacity-100' : 'opacity-60 group-hover/opt:opacity-100'}`}>
+                    <span className={`font-mono text-[10px] tracking-wider truncate flex-1 ${values.includes(opt) ? 'opacity-100' : 'opacity-60 group-hover/opt:opacity-100'}`}>
                       {opt}
                     </span>
                     {values.includes(opt) && <Check className="w-3 h-3 flex-shrink-0 ml-2" />}
