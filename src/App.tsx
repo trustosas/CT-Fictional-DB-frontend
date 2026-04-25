@@ -342,6 +342,16 @@ function AppContent() {
   });
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showSyncTrigger && !isSyncing) {
+      timer = setTimeout(() => {
+        setShowSyncTrigger(false);
+      }, 2000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSyncTrigger, isSyncing]);
+
+  useEffect(() => {
     if (selectedQuadra) localStorage.setItem('selectedQuadra', selectedQuadra);
     else localStorage.removeItem('selectedQuadra');
   }, [selectedQuadra]);
@@ -1639,19 +1649,6 @@ function AppContent() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="max-w-2xl min-w-0">
             <div className="flex flex-col mb-4">
-              <AnimatePresence>
-                {showSyncTrigger && currentView === 'feed' && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    onClick={() => loadData(false, true)}
-                    className="font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-all cursor-pointer mb-1 text-left"
-                  >
-                    Sync
-                  </motion.button>
-                )}
-              </AnimatePresence>
               <div className="flex items-center gap-3">
                 <span 
                   className={`font-mono text-xs uppercase tracking-widest transition-all ${currentView === 'feed' ? 'cursor-pointer hover:opacity-80' : 'opacity-50'}`}
@@ -1662,17 +1659,29 @@ function AppContent() {
                   currentView === 'medium' ? `Medium Collection` :
                   currentView === 'work' ? 'Work Profile' : 'CT in Fiction v2.0'}
                 </span>
-                <AnimatePresence>
-                  {isSyncing && !error && (
-                    <motion.div 
-                      initial={{ opacity: 0, x: -10 }}
+                
+                <AnimatePresence mode="wait">
+                  {(showSyncTrigger || isSyncing) && currentView === 'feed' && (
+                    <motion.button
+                      initial={{ opacity: 0, x: -5 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="flex items-center gap-1.5 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
+                      exit={{ opacity: 0, x: -5 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isSyncing) loadData(false, true);
+                      }}
+                      disabled={isSyncing}
+                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all ${
+                        isSyncing 
+                        ? "bg-[#1a1a1a]/5 border-[#1a1a1a]/10 text-[#1a1a1a] cursor-default" 
+                        : "bg-[#1a1a1a]/5 border-[#1a1a1a]/10 text-[#1a1a1a]/60 hover:bg-[#1a1a1a]/10 hover:text-[#1a1a1a] cursor-pointer"
+                      }`}
                     >
-                      <Loader2 className="w-2.5 h-2.5 animate-spin opacity-40" />
-                      <span className="font-mono text-[8px] uppercase tracking-tighter opacity-60">Syncing...</span>
-                    </motion.div>
+                      {isSyncing && <Loader2 className="w-2.5 h-2.5 animate-spin opacity-40" />}
+                      <span className="font-mono text-[8px] uppercase tracking-tighter">
+                        {isSyncing ? "Syncing..." : "Sync"}
+                      </span>
+                    </motion.button>
                   )}
                 </AnimatePresence>
                 {error && (
