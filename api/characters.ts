@@ -1,25 +1,14 @@
-import express from "express";
-import { createServer as createViteServer } from "vite";
-import path from "path";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Papa from 'papaparse';
-
-const app = express();
-const PORT = 3000;
 
 const CSV_URL = process.env.VITE_DATABASE_URL || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhyird8EfAwfyJx4tyy7stnR10wzr8k3kyhZ1tSH9JZGmcKkD2e_Q0JmAGJrl1y15PCyghiRS1zRlT/pub?output=csv';
 
-let cachedCharacters: any[] = [];
-let isFetching = false;
-
-async function fetchAndCacheCharacters() {
-  if (isFetching) return;
-  isFetching = true;
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log('Fetching characters from Google Sheets...');
     const response = await fetch(CSV_URL);
-    const csvText = await response.text();
+    if (!response.ok) throw new Error('Failed to fetch from Google');
     
-    // Split into lines and skip the first 6 metadata/header rows
+    const csvText = await response.text();
     const lines = csvText.split('\n');
     const dataLines = lines.slice(6).join('\n');
     
@@ -28,16 +17,13 @@ async function fetchAndCacheCharacters() {
         header: false,
         skipEmptyLines: 'greedy',
         complete: (results) => {
-          const parsedCharacters = results.data.map((row: any, index: number) => {
+          const parsed = results.data.map((row: any, index: number) => {
             const name = row[4] || '';
             const type = row[6] || '';
-            
-            // Extract motif values starting from index 34
             const motifValues = row.slice(34).map((val: any) => {
               const sVal = String(val).trim().toUpperCase();
               return sVal === 'TRUE' || sVal === '1' || sVal === 'YES';
             });
-
             const isPublished = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[29]).trim().toUpperCase());
             const isWorkArtOpaque = ['TRUE', '1', 'YES', 'T', 'Y'].includes(String(row[32]).trim().toUpperCase());
 
@@ -82,74 +68,22 @@ async function fetchAndCacheCharacters() {
           }).filter((char: any) => 
             char.name && 
             (char.type || char.rawQuadra) && 
-            char.name.toLowerCase() !== 'name' &&
             char.isPublished &&
-            char.author &&
-            char.author.trim() !== ''
+            char.author && char.author.trim() !== ''
           );
-
-          resolve(parsedCharacters);
+          resolve(parsed);
         },
-        error: (error: any) => {
-          reject(error);
-        }
+        error: reject
       });
     });
 
-    cachedCharacters = characters;
-    console.log(`Successfully cached ${cachedCharacters.length} characters.`);
-    return characters;
+    // Edge Network Caching Headers
+    // public: cache is public
+    // s-maxage=86400: cache on Vercel's global network for 24 hours
+    // stale-while-revalidate: allow serving stale data while fetching fresh in background
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
+    res.status(200).json(characters);
   } catch (error) {
-    console.error('Fetch error:', error);
-    throw error;
-  } finally {
-    isFetching = false;
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
-
-// Global cachedCharacters reference for the app
-// Initial fetch
-fetchAndCacheCharacters().catch(console.error);
-
-// API routes
-app.get("/api/characters", (req, res) => {
-  // Edge Caching Headers for Vercel
-  // s-maxage=86400 caches on Vercel's Edge Network for 24 hours
-  // stale-while-revalidate allows serving a stale response while refreshing in background
-  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
-  res.json(cachedCharacters);
-});
-
-app.post("/api/sync", async (req, res) => {
-  try {
-    console.log('Manual sync triggered via POST /api/sync');
-    const data = await fetchAndCacheCharacters();
-    // When sync is successful, we return a success response.
-    // The client will then fetch characters with a cache-busting query parameter.
-    res.json({ success: true, count: data?.length || 0, timestamp: Date.now() });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
-  }
-});
-
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();

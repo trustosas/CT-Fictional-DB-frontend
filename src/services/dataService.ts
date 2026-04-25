@@ -8,16 +8,6 @@ let lastFetchTime: number = 0;
 let activeFetch: Promise<Character[]> | null = null;
 
 export async function fetchCharacters(forceRefresh = false): Promise<Character[]> {
-  // If forceRefresh is requested, hit the sync endpoint first to refresh the server memory
-  if (forceRefresh) {
-    try {
-      console.log('Requesting server sync...');
-      await fetch('/api/sync', { method: 'POST' });
-    } catch (e) {
-      console.error('Failed to sync server cache', e);
-    }
-  }
-
   // Check memory cache first if not forcing
   if (!forceRefresh && cachedCharacters) {
     return cachedCharacters;
@@ -39,9 +29,13 @@ export async function fetchCharacters(forceRefresh = false): Promise<Character[]
 
   try {
     // When triggering a force refresh, append a timestamp to bypass Vercel's Edge Cache
+    // and force the serverless function to execute and fetch fresh from Google.
     const url = forceRefresh ? `/api/characters?t=${Date.now()}` : '/api/characters';
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch from server API');
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from server API: ${response.status}`);
+    }
     
     const characters = await response.json();
     
