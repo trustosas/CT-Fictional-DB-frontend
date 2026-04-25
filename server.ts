@@ -20,7 +20,17 @@ async function startServer() {
   // API route for characters
   app.get("/api/characters", async (req, res) => {
     try {
-      const response = await fetch(CSV_URL);
+      const isForce = !!req.query.t;
+      
+      const targetUrl = isForce 
+        ? `${CSV_URL}${CSV_URL.includes('?') ? '&' : '?'}_t=${Date.now()}` 
+        : CSV_URL;
+
+      const response = await fetch(targetUrl, {
+        cache: isForce ? 'no-store' : 'default',
+        headers: isForce ? { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } : {}
+      });
+      
       if (!response.ok) throw new Error('Failed to fetch from Google');
       
       const csvText = await response.text();
@@ -86,7 +96,11 @@ async function startServer() {
             char.author && char.author.trim() !== ''
           );
           
-          res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
+          if (isForce) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          } else {
+            res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
+          }
           res.json(characters);
         },
         error: (error: any) => {

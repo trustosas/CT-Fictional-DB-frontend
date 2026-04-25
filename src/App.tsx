@@ -585,10 +585,14 @@ function AppContent() {
 
       if (sha) setLatestCommitSha(sha);
 
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setCharacters(data);
         setError(null);
         if (force) setShowSyncTrigger(false);
+        
+        if (data.length === 0) {
+          setError('Database is empty or all subjects are unpublished.');
+        }
 
         // If we are on a subject page, fetch the analysis too
         if (subjectSlug) {
