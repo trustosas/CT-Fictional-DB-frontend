@@ -274,6 +274,7 @@ function AppContent() {
   const [characters, setCharacters] = useState<Character[]>(STATIC_CHARACTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showSyncTrigger, setShowSyncTrigger] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 10;
@@ -532,7 +533,7 @@ function AppContent() {
   useEffect(() => {
     setCurrentPage(1);
   }, [mediumSlug, workSlug, searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedMotifs]);
-  const loadData = async (isSilent = false) => {
+  const loadData = async (isSilent = false, force = false) => {
     try {
       if (!isSilent) setIsLoading(true);
       setIsSyncing(true);
@@ -544,7 +545,7 @@ function AppContent() {
       
       // Fetch both characters and the latest commit SHA in parallel
       const [data, sha] = await Promise.all([
-        fetchCharacters(),
+        fetchCharacters(force),
         fetchLatestCommitSha()
       ]);
 
@@ -553,6 +554,7 @@ function AppContent() {
       if (data && data.length > 0) {
         setCharacters(data);
         setError(null);
+        if (force) setShowSyncTrigger(false);
 
         // If we are on a subject page, fetch the analysis too
         if (subjectSlug) {
@@ -1614,32 +1616,50 @@ function AppContent() {
       <header className="mb-8 border-b border-[#1a1a1a]/10 pb-6">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="max-w-2xl min-w-0">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="font-mono text-xs uppercase tracking-widest opacity-50">
-                {currentView === 'feed' ? 'Gallery' : 
-                 currentView === 'all-works' ? 'All Media Collection' :
-                 currentView === 'medium' ? `Medium Collection` :
-                 currentView === 'work' ? 'Work Profile' : 'CT in Fiction v2.0'}
-              </span>
+            <div className="flex flex-col mb-4">
               <AnimatePresence>
-                {isSyncing && !error && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="flex items-center gap-1.5 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
+                {showSyncTrigger && currentView === 'feed' && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    onClick={() => loadData(false, true)}
+                    className="font-mono text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-all cursor-pointer mb-1 text-left"
                   >
-                    <Loader2 className="w-2.5 h-2.5 animate-spin opacity-40" />
-                    <span className="font-mono text-[8px] uppercase tracking-tighter opacity-60">Syncing...</span>
-                  </motion.div>
+                    Sync
+                  </motion.button>
                 )}
               </AnimatePresence>
-              {error && (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/5 text-red-500 rounded-full">
-                  <AlertCircle className="w-2.5 h-2.5" />
-                  <span className="font-mono text-[8px] uppercase tracking-tighter">{error}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                <span 
+                  className={`font-mono text-xs uppercase tracking-widest transition-all ${currentView === 'feed' ? 'cursor-pointer hover:opacity-80' : 'opacity-50'}`}
+                  onClick={() => currentView === 'feed' && setShowSyncTrigger(!showSyncTrigger)}
+                >
+                  {currentView === 'feed' ? 'Gallery' : 
+                  currentView === 'all-works' ? 'All Media Collection' :
+                  currentView === 'medium' ? `Medium Collection` :
+                  currentView === 'work' ? 'Work Profile' : 'CT in Fiction v2.0'}
+                </span>
+                <AnimatePresence>
+                  {isSyncing && !error && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      className="flex items-center gap-1.5 px-2 py-0.5 bg-[#1a1a1a]/5 text-[#1a1a1a] rounded-full border border-[#1a1a1a]/10"
+                    >
+                      <Loader2 className="w-2.5 h-2.5 animate-spin opacity-40" />
+                      <span className="font-mono text-[8px] uppercase tracking-tighter opacity-60">Syncing...</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {error && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/5 text-red-500 rounded-full">
+                    <AlertCircle className="w-2.5 h-2.5" />
+                    <span className="font-mono text-[8px] uppercase tracking-tighter">{error}</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             {currentView === 'feed' ? (
