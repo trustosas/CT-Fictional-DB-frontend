@@ -166,6 +166,7 @@ export default function App() {
 function SmartWorkImage({ src, alt, className, isOpaque }: { src: string, alt: string, className?: string, isOpaque?: boolean }) {
   const [orientation, setOrientation] = useState<'landscape' | 'portrait' | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   if (!src || hasError) {
     return (
@@ -176,26 +177,38 @@ function SmartWorkImage({ src, alt, className, isOpaque }: { src: string, alt: s
   }
 
   return (
-    <img 
-      src={src} 
-      alt={alt}
-      onLoad={(e) => {
-        const img = e.currentTarget;
-        setOrientation(img.naturalWidth >= img.naturalHeight ? 'landscape' : 'portrait');
-      }}
-      onError={() => setHasError(true)}
-      className={`${className} ${
-        isOpaque === true 
-          ? (orientation === 'portrait' ? 'object-contain p-0' : 'object-cover p-0') 
-          : 'object-contain p-6'
-      }`}
-      referrerPolicy="no-referrer"
-    />
+    <div className="relative w-full h-full overflow-hidden">
+      <motion.img 
+        src={src} 
+        alt={alt}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isLoaded ? 1 : 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setOrientation(img.naturalWidth >= img.naturalHeight ? 'landscape' : 'portrait');
+          setIsLoaded(true);
+        }}
+        onError={() => setHasError(true)}
+        className={`${className} ${
+          isOpaque === true 
+            ? (orientation === 'portrait' ? 'object-contain p-0' : 'object-cover p-0') 
+            : 'object-contain p-6'
+        }`}
+        referrerPolicy="no-referrer"
+      />
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#f5f2ed]/50 backdrop-blur-sm">
+          <Loader2 className="w-6 h-6 animate-spin opacity-20" />
+        </div>
+      )}
+    </div>
   );
 }
 
 function SmartSubjectImage({ src, alt, className }: { src: string, alt: string, className?: string }) {
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   if (!src || hasError) {
     return (
@@ -207,13 +220,24 @@ function SmartSubjectImage({ src, alt, className }: { src: string, alt: string, 
   }
 
   return (
-    <img 
-      src={src} 
-      alt={alt}
-      onError={() => setHasError(true)}
-      className={className}
-      referrerPolicy="no-referrer"
-    />
+    <div className="relative w-full h-full">
+      <motion.img 
+        src={src} 
+        alt={alt}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isLoaded ? 1 : 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setHasError(true)}
+        className={className}
+        referrerPolicy="no-referrer"
+      />
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-[#1a1a1a]/5 animate-pulse flex items-center justify-center">
+           <Loader2 className="w-4 h-4 animate-spin opacity-10" />
+        </div>
+      )}
+    </div>
   );
 }
 
