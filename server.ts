@@ -113,13 +113,20 @@ fetchAndCacheCharacters().catch(console.error);
 
 // API routes
 app.get("/api/characters", (req, res) => {
+  // Edge Caching Headers for Vercel
+  // s-maxage=86400 caches on Vercel's Edge Network for 24 hours
+  // stale-while-revalidate allows serving a stale response while refreshing in background
+  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
   res.json(cachedCharacters);
 });
 
 app.post("/api/sync", async (req, res) => {
   try {
+    console.log('Manual sync triggered via POST /api/sync');
     const data = await fetchAndCacheCharacters();
-    res.json({ success: true, count: data?.length || 0 });
+    // When sync is successful, we return a success response.
+    // The client will then fetch characters with a cache-busting query parameter.
+    res.json({ success: true, count: data?.length || 0, timestamp: Date.now() });
   } catch (error) {
     res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
   }
