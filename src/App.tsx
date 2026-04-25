@@ -165,8 +165,9 @@ export default function App() {
 
 function SmartWorkImage({ src, alt, className, isOpaque }: { src: string, alt: string, className?: string, isOpaque?: boolean }) {
   const [orientation, setOrientation] = useState<'landscape' | 'portrait' | null>(null);
+  const [hasError, setHasError] = useState(false);
 
-  if (!src) {
+  if (!src || hasError) {
     return (
       <div className={`${className} flex items-center justify-center bg-[#1a1a1a]/5 opacity-20`}>
         <FileText className="w-12 h-12" />
@@ -182,11 +183,35 @@ function SmartWorkImage({ src, alt, className, isOpaque }: { src: string, alt: s
         const img = e.currentTarget;
         setOrientation(img.naturalWidth >= img.naturalHeight ? 'landscape' : 'portrait');
       }}
+      onError={() => setHasError(true)}
       className={`${className} ${
         isOpaque === true 
           ? (orientation === 'portrait' ? 'object-contain p-0' : 'object-cover p-0') 
           : 'object-contain p-6'
       }`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+function SmartSubjectImage({ src, alt, className }: { src: string, alt: string, className?: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return (
+      <div className={`${className} flex flex-col items-center justify-center bg-[#1a1a1a]/5 gap-2`}>
+        <User className="w-12 h-12 opacity-10" />
+        <p className="font-mono text-[8px] uppercase tracking-[0.2em] opacity-30">Portrait Unavailable</p>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={alt}
+      onError={() => setHasError(true)}
+      className={className}
       referrerPolicy="no-referrer"
     />
   );
@@ -2043,17 +2068,12 @@ function AppContent() {
                 data-quadra={(char.quadra || char.rawQuadra || '').toLowerCase()}
                 onClick={() => handleSelectCharacter(char)}
               >
-                <div className="character-image-container aspect-[16/9] flex items-center justify-center bg-[#1a1a1a]/5">
-                  {char.imageUrl ? (
-                    <img 
-                      src={char.imageUrl} 
-                      alt={char.name}
-                      referrerPolicy="no-referrer"
-                      className="character-image object-cover group-hover:scale-105"
-                    />
-                  ) : (
-                    <User className="w-16 h-16 opacity-10" />
-                  )}
+                <div className="character-image-container aspect-[16/9] flex items-center justify-center bg-[#1a1a1a]/5 overflow-hidden">
+                  <SmartSubjectImage 
+                    src={char.imageUrl || ''} 
+                    alt={char.name}
+                    className="character-image object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
                 <div className="flex justify-between items-start mb-2 gap-4">
                   <div className="min-w-0 flex-1">
@@ -2330,14 +2350,14 @@ function AppContent() {
                   onClick={() => selectedCharacter.imageUrl && handleCopyImage(selectedCharacter.imageUrl)}
                   className="aspect-[16/9] rounded-sm overflow-hidden mb-12 relative group bg-[#1a1a1a]/5 flex items-center justify-center cursor-pointer active:scale-[0.99] transition-transform select-none"
                 >
-                  {selectedCharacter.imageUrl ? (
+                  <SmartSubjectImage 
+                    src={selectedCharacter.imageUrl || ''} 
+                    alt={selectedCharacter.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  
+                  {selectedCharacter.imageUrl && (
                     <>
-                      <img 
-                        src={selectedCharacter.imageUrl} 
-                        alt={selectedCharacter.name}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                         <p className="text-white font-mono text-[10px] uppercase tracking-widest">
                           {copyStatus === 'image' ? 'Link Copied' : 
@@ -2363,11 +2383,6 @@ function AppContent() {
                         )}
                       </AnimatePresence>
                     </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-4">
-                      <User className="w-24 h-24 opacity-10" />
-                      <p className="font-mono text-[8px] uppercase tracking-[0.3em] opacity-30">No Portrait Available</p>
-                    </div>
                   )}
                 </div>
 
