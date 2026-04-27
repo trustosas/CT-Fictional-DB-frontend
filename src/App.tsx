@@ -303,13 +303,17 @@ function AppContent() {
   const [error, setError] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 10;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('searchQuery') || '');
   const [workSortOrder, setWorkSortOrder] = useState<'az' | 'year' | 'subjects' | 'published' | 'edited'>(() => {
     return (localStorage.getItem('workSortOrder') as any) || 'published';
   });
   const [subjectSortOrder, setSubjectSortOrder] = useState<'published' | 'edited'>(() => {
     return (localStorage.getItem('subjectSortOrder') as any) || 'published';
   });
+
+  useEffect(() => {
+    localStorage.setItem('searchQuery', searchQuery);
+  }, [searchQuery]);
 
   useEffect(() => {
     localStorage.setItem('workSortOrder', workSortOrder);
@@ -1005,6 +1009,8 @@ function AppContent() {
 
   // Reset dependent filters if they become invalid
   useEffect(() => {
+    if (isLoading || publishedCharacters.length === 0) return;
+
     if (selectedJudgmentAxis && !judgmentAxes.includes(selectedJudgmentAxis)) setSelectedJudgmentAxis(null);
     if (selectedLeadEnergetic && !energetics.includes(selectedLeadEnergetic)) setSelectedLeadEnergetic(null);
     if (selectedPerceptionAxis && !perceptionAxes.includes(selectedPerceptionAxis)) setSelectedPerceptionAxis(null);
@@ -1026,7 +1032,7 @@ function AppContent() {
     if (validMotifs.length !== selectedMotifs.length) {
       setSelectedMotifs(validMotifs);
     }
-  }, [judgmentAxes, energetics, perceptionAxes, auxEnergetics, developments, behaviourQualias, subtypes, emotionalAttitudes, authors, quadras, availableMotifs, selectedMotifs]);
+  }, [isLoading, publishedCharacters.length, judgmentAxes, energetics, perceptionAxes, auxEnergetics, developments, behaviourQualias, subtypes, emotionalAttitudes, authors, quadras, availableMotifs, selectedMotifs, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedEmotionalAttitude, selectedAuthors]);
 
   const filteredCharacters = useMemo(() => {
     return publishedCharacters
