@@ -1431,7 +1431,7 @@ function AppContent() {
       return char?.medium === activeMedium;
     });
 
-    if (searchQuery && !(currentFilters.quadra || currentFilters.judgmentAxis || currentFilters.perceptionAxis || currentFilters.leadEnergetic || currentFilters.auxEnergetic || currentFilters.development || currentFilters.behaviourQualia || currentFilters.subtype || currentFilters.emotionalAttitude || currentFilters.motifs.length > 0)) {
+    if (searchQuery) {
       const query = searchQuery.toLowerCase();
       list = list.filter(w => {
         const char = publishedCharacters.find(c => c.source === w.title);
@@ -1484,12 +1484,8 @@ function AppContent() {
   }, [isLoading, mediumSlug, activeMedium, workSlug, activeWork, subjectSlug, selectedCharacter, currentView]);
 
   const hasActiveFilters = useMemo(() => {
-    if (currentView === 'all-works') {
-       // In the Works (All Media) collection, archetype filters trigger the subject list
-       return selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthors.length > 0 || selectedMotifs.length > 0;
-    }
-    if (currentView === 'medium') {
-       // Media pages (Individual mediums) are NOT affected by archetype filters
+    if (currentView === 'all-works' || currentView === 'medium') {
+       // Media pages and All Media collection are NOT affected by archetype filters
        return false;
     }
     return searchQuery || selectedQuadra || selectedDevelopment || selectedJudgmentAxis || selectedPerceptionAxis || selectedLeadEnergetic || selectedAuxEnergetic || selectedBehaviourQualia || selectedSubtype || selectedEmotionalAttitude || selectedAuthors.length > 0 || selectedMotifs.length > 0;
@@ -1719,7 +1715,10 @@ function AppContent() {
                   All Media
                 </h1>
                 <p className="text-base opacity-70 leading-relaxed">
-                  Exploring all {works.length} indexed {pluralize(works.length, 'work')} across all media types.
+                  {searchQuery 
+                    ? `Found ${worksInMedium.length} ${pluralize(worksInMedium.length, 'work')} matching "${searchQuery}" across all media.`
+                    : `Exploring all ${works.length} indexed ${pluralize(works.length, 'work')} across all media types.`
+                  }
                 </p>
               </>
             ) : currentView === 'medium' ? (
@@ -1728,8 +1727,8 @@ function AppContent() {
                   {activeMedium}
                 </h1>
                 <p className="text-base opacity-70 leading-relaxed">
-                  {hasActiveFilters 
-                    ? `Found ${filteredCharacters.length} ${pluralize(filteredCharacters.length, 'subject')} matching your criteria in ${activeMedium}.`
+                  {searchQuery 
+                    ? `Found ${worksInMedium.length} ${pluralize(worksInMedium.length, 'work')} matching "${searchQuery}" in ${activeMedium}.`
                     : `Exploring ${worksInMedium.length} ${pluralize(worksInMedium.length, 'work')} within the ${activeMedium} medium.`
                   }
                 </p>
