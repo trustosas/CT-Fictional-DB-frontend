@@ -534,6 +534,8 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mediumSlug, workSlug, subjectSlug } = useParams();
+  const lastGalleryMediumRef = useRef<string | undefined>(mediumSlug);
+  const lastGalleryWorkRef = useRef<string | undefined>(workSlug);
   const [characters, setCharacters] = useState<Character[]>(STATIC_CHARACTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -867,7 +869,18 @@ function AppContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [mediumSlug, workSlug, searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedInterEnergetic, selectedEmotionalAttitude, selectedMotifs]);
+  }, [searchQuery, selectedQuadra, selectedDevelopment, selectedJudgmentAxis, selectedPerceptionAxis, selectedLeadEnergetic, selectedAuxEnergetic, selectedBehaviourQualia, selectedSubtype, selectedInterEnergetic, selectedEmotionalAttitude, selectedMotifs]);
+
+  useEffect(() => {
+    if (subjectSlug) {
+      return;
+    }
+    if (mediumSlug !== lastGalleryMediumRef.current || workSlug !== lastGalleryWorkRef.current) {
+      setCurrentPage(1);
+      lastGalleryMediumRef.current = mediumSlug;
+      lastGalleryWorkRef.current = workSlug;
+    }
+  }, [mediumSlug, workSlug, subjectSlug]);
   const loadData = async (isSilent = false, force = false) => {
     try {
       if (!isSilent) setIsLoading(true);
