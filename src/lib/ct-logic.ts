@@ -86,8 +86,8 @@ export const MOTIF_DEFINITIONS: Record<string, Record<string, string[]>> = {
   'Fe': {
     'Philosophical': [
       'Teleology: The universe is a teleological/purposeful/wilful evolution unfolding',
-      'I-Thou Ontology: Our being is co-defined by our interaction with others',
-      'Panpsychism: The universe is made of conscious agents interacting'
+      'Panpsychism: The universe is made of conscious agents interacting',
+      'I-Thou Ontology: Our being is co-defined by our interaction with others'
     ],
     'Behavioural': [
       'Transmutable Soul: Character is malleable and contingent on what we do/believe',
@@ -107,8 +107,8 @@ export const MOTIF_DEFINITIONS: Record<string, Record<string, string[]>> = {
     ],
     'Behavioural': [
       'Computation: Data analysis, computer science, programming, math, statistical modelling',
-      'Engineering: Bioengineering, mechanical engineering, circuits, fluid mechanics, robotics, automotive',
-      'Government Systems: The legal system, economics, finance, military operations'
+      'Government Systems: The legal system, economics, finance, military operations',
+      'Engineering: Bioengineering, mechanical engineering, circuits, fluid mechanics, robotics, automotive'
     ],
     'Linguistic': [
       'Blunt Delivery: Matter-of-fact language, straightforward and unadorned',
